@@ -1,0 +1,34 @@
+node_modules/
+dist/
+
+# Archivos fuente pesados no usados por la app
+cartografia_elche/cartografia_diseminado.geojson
+cartografia_elche/cartografia_nucleos.geojson
+cartografia_elche/estilos_raw.json
+
+# GeoTIFF original (la app usa el JPEG convertido)
+public/plan_A2_11C_geo.tif
+public/plan_A2_11C_geo.tif.aux.xml
+
+# Recortes y auxiliares de georreferenciación
+public/*.png
+public/inspect_plan.html
+
+# Archivos QGIS y PDFs fuente
+*.qgz
+*.pdf
+*.pdf.aux.xml
+*.pdf.points
+*.tif
+*.tif.aux.xml
+A2 11-C_modified.tif
+A2 11-C_modified.tif.aux.xml
+
+# Scripts Python de descarga
+descargar_*.py
+generar_estilos_ol.py
+
+# Carpetas de trabajo
+FASE_1_A/
+FASE_1_B/
+pdf_images/

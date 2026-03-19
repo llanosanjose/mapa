@@ -1,0 +1,22 @@
+{
+  "name": "visor-elche",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource/cinzel": "^5.2.8",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/inconsolata": "^5.2.8",
+    "@fontsource/nunito": "^5.2.7",
+    "@fontsource/rajdhani": "^5.2.7",
+    "ol": "^10.4.0"
+  },
+  "devDependencies": {
+    "vite": "^6.2.0"
+  }
+}
