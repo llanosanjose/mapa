@@ -36,9 +36,10 @@ export class StreetSearch {
 
   async _loadData() {
     try {
+      const base = import.meta.env.BASE_URL;
       const [viario, ndpu] = await Promise.all([
-        fetch('/cartografia_elche/viario.geojson').then(r => r.json()),
-        fetch('/cartografia_elche/ndpu.geojson').then(r => r.json()),
+        fetch(base + 'cartografia_elche/viario.geojson').then(r => r.json()),
+        fetch(base + 'cartografia_elche/ndpu.geojson').then(r => r.json()),
       ]);
 
       // Indexar viario
