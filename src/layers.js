@@ -33,8 +33,10 @@ const pnoaSource = new XYZ({
 // ── GeoJSON format (reproject WGS84 → Web Mercator) ──────────────────────
 export const fmt = new GeoJSON({ featureProjection: 'EPSG:3857' });
 
+const BASE = import.meta.env.BASE_URL;
+
 function geojsonSource(path) {
-  return new VectorSource({ url: path, format: fmt });
+  return new VectorSource({ url: BASE + path, format: fmt });
 }
 
 // ── Callejero sources — loaded explicitly so search works at any zoom ─────
@@ -42,7 +44,7 @@ export const viarioSource = new VectorSource();
 export const ndpuSource   = new VectorSource();
 
 function loadSearchData() {
-  fetch('/cartografia_elche/viario.geojson')
+  fetch(BASE + 'cartografia_elche/viario.geojson')
     .then(r => r.json())
     .then(data => {
       viarioSource.addFeatures(fmt.readFeatures(data));
@@ -50,7 +52,7 @@ function loadSearchData() {
     })
     .catch(e => console.warn('[viario]', e));
 
-  fetch('/cartografia_elche/ndpu.geojson')
+  fetch(BASE + 'cartografia_elche/ndpu.geojson')
     .then(r => r.json())
     .then(data => {
       ndpuSource.addFeatures(fmt.readFeatures(data));
@@ -141,7 +143,7 @@ export const LAYER_DEFS = [
     label: 'FASE 1',
     color: '#fe7b07',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/fase_1.geojson'),
+      source: geojsonSource('cartografia_elche/fase_1.geojson'),
       style: [
         new Style({ stroke: new Stroke({ color: 'rgba(0,0,0,0.55)', width: 8 }) }),
         new Style({ stroke: new Stroke({ color: '#fe7b07', width: 4 }) }),
@@ -156,7 +158,7 @@ export const LAYER_DEFS = [
     label: 'FASE 1B',
     color: '#fe7b07',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/fase_1b.geojson'),
+      source: geojsonSource('cartografia_elche/fase_1b.geojson'),
       style: [
         new Style({ stroke: new Stroke({ color: 'rgba(0,0,0,0.55)', width: 8 }) }),
         new Style({ stroke: new Stroke({ color: '#fe7b07', width: 4, lineDash: [10, 8] }) }),
@@ -172,7 +174,7 @@ export const LAYER_DEFS = [
     label: 'Término municipal',
     color: '#ffffff',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/termino_municipal.geojson'),
+      source: geojsonSource('cartografia_elche/termino_municipal.geojson'),
       style: style_termino_municipal,
       zIndex: 120,
     }),
@@ -183,7 +185,7 @@ export const LAYER_DEFS = [
     label: 'Núcleos de población',
     color: '#ff4060',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/nucleos_poblacion.geojson'),
+      source: geojsonSource('cartografia_elche/nucleos_poblacion.geojson'),
       style: style_nucleos_poblacion,
       zIndex: 110,
     }),
@@ -194,7 +196,7 @@ export const LAYER_DEFS = [
     label: 'Humedales y cauces',
     color: '#00a9e6',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/humedales_cauces_barrancos.geojson'),
+      source: geojsonSource('cartografia_elche/humedales_cauces_barrancos.geojson'),
       style: style_humedales_cauces_barrancos,
       zIndex: 100,
     }),
@@ -205,7 +207,7 @@ export const LAYER_DEFS = [
     label: 'Partidas rurales',
     color: '#aaaaaa',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/partidas_rurales.geojson'),
+      source: geojsonSource('cartografia_elche/partidas_rurales.geojson'),
       style: style_partidas_rurales,
       zIndex: 90,
     }),
@@ -218,7 +220,7 @@ export const LAYER_DEFS = [
     color: '#ffbebe',
     zoomHint: '≥ z15',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/cartografia_nucleos_resto.geojson'),
+      source: geojsonSource('cartografia_elche/cartografia_nucleos_resto.geojson'),
       style: style_cartografia_nucleos,
       minZoom: 15,
       zIndex: 80,
@@ -232,7 +234,7 @@ export const LAYER_DEFS = [
     color: '#ffaaaa',
     zoomHint: '≥ z15',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/cartografia_nucleos_elche.geojson'),
+      source: geojsonSource('cartografia_elche/cartografia_nucleos_elche.geojson'),
       style: style_cartografia_nucleos,
       minZoom: 15,
       zIndex: 70,
@@ -247,7 +249,7 @@ export const LAYER_DEFS = [
     color: '#e6e6a0',
     zoomHint: '≥ z13',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/cartografia_llano_san_jose.geojson'),
+      source: geojsonSource('cartografia_elche/cartografia_llano_san_jose.geojson'),
       style: style_cartografia_diseminado,
       minZoom: 13,
       zIndex: 60,
@@ -261,7 +263,7 @@ export const LAYER_DEFS = [
     color: '#d4e6a0',
     zoomHint: '≥ z13',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/cartografia_matola.geojson'),
+      source: geojsonSource('cartografia_elche/cartografia_matola.geojson'),
       style: style_cartografia_diseminado,
       minZoom: 13,
       zIndex: 50,
@@ -275,7 +277,7 @@ export const LAYER_DEFS = [
     color: '#c8c8a0',
     zoomHint: '≥ z13',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/cartografia_diseminado_resto.geojson'),
+      source: geojsonSource('cartografia_elche/cartografia_diseminado_resto.geojson'),
       style: style_cartografia_diseminado,
       minZoom: 13,
       zIndex: 40,
@@ -289,7 +291,7 @@ export const LAYER_DEFS = [
     label: 'Provincia de Alicante',
     color: '#f3edd3',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/provincia_alicante.geojson'),
+      source: geojsonSource('cartografia_elche/provincia_alicante.geojson'),
       style: style_provincia_alicante,
       zIndex: 30,
     }),
@@ -300,7 +302,7 @@ export const LAYER_DEFS = [
     label: 'Mar Mediterráneo',
     color: '#73b2ff',
     layer: new VectorLayer({
-      source: geojsonSource('/cartografia_elche/mar_mediterraneo.geojson'),
+      source: geojsonSource('cartografia_elche/mar_mediterraneo.geojson'),
       style: style_mar_mediterraneo,
       zIndex: 20,
     }),
@@ -313,7 +315,7 @@ export const LAYER_DEFS = [
     color: '#a0522d',
     layer: new ImageLayer({
       source: new ImageStatic({
-        url: '/plan_A2_11C_geo.jpg',
+        url: BASE + 'plan_A2_11C_geo.jpg',
         imageExtent: [-83887, 4614524, -81329, 4615948],
         projection: 'EPSG:3857',
       }),
