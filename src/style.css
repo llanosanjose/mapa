@@ -1101,7 +1101,11 @@ html[data-theme="light"] #admin-panel { box-shadow: -6px 0 20px rgba(0,0,0,0.15)
 }
 .admin-btn-sm:hover { border-color: var(--border-hi); color: var(--text-1); }
 
-.admin-btn-del:hover { border-color: var(--red); color: var(--red); }
+.admin-btn-del:hover { border-color: var(--red);   color: var(--red);   }
+.admin-btn-ok:hover  { border-color: var(--green); color: var(--green); }
+
+.admin-row-inactive { opacity: 0.45; }
+.admin-row-inactive:hover { opacity: 0.75; }
 
 /* ── Admin form ──────────────────────────────────────────────────────────── */
 #admin-form-wrap {

@@ -102,18 +102,27 @@ export class AdminPanel {
       const btns = document.createElement('div');
       btns.className = 'admin-row-btns';
 
+      const inactive = !!m.fecha_baja;
+      if (inactive) row.classList.add('admin-row-inactive');
+
       const editBtn = document.createElement('button');
       editBtn.className = 'admin-btn-sm';
       editBtn.textContent = 'Editar';
       editBtn.addEventListener('click', e => { e.stopPropagation(); this._showForm(m); });
 
-      const delBtn = document.createElement('button');
-      delBtn.className = 'admin-btn-sm admin-btn-del';
-      delBtn.textContent = 'Borrar';
-      delBtn.addEventListener('click', e => { e.stopPropagation(); this._deleteMember(m); });
+      const toggleBtn = document.createElement('button');
+      if (inactive) {
+        toggleBtn.className = 'admin-btn-sm admin-btn-ok';
+        toggleBtn.textContent = 'Reactivar';
+        toggleBtn.addEventListener('click', e => { e.stopPropagation(); this._reactivar(m); });
+      } else {
+        toggleBtn.className = 'admin-btn-sm admin-btn-del';
+        toggleBtn.textContent = 'Dar de baja';
+        toggleBtn.addEventListener('click', e => { e.stopPropagation(); this._darDeBaja(m); });
+      }
 
       btns.appendChild(editBtn);
-      btns.appendChild(delBtn);
+      btns.appendChild(toggleBtn);
       row.appendChild(cuota);
       row.appendChild(name);
       row.appendChild(addr);
@@ -190,6 +199,10 @@ export class AdminPanel {
         <div class="admin-field">
           <label>Año cuota</label>
           <input id="f-anno" type="number" value="${member?.anno_cuota ?? CURRENT_YEAR}" min="2000" max="2100" />
+        </div>
+        <div class="admin-field">
+          <label>Fecha de baja <span style="color:var(--text-3);font-weight:400">(dejar vacío si está activo)</span></label>
+          <input id="f-fecha-baja" type="date" value="${member?.fecha_baja ?? ''}" />
         </div>
         <div class="admin-field">
           <label>Notas</label>
@@ -322,6 +335,7 @@ export class AdminPanel {
         fecha_alta:   document.getElementById('f-fecha').value,
         cuota_pagada: document.getElementById('f-cuota').checked,
         anno_cuota:   parseInt(document.getElementById('f-anno').value, 10),
+        fecha_baja:   document.getElementById('f-fecha-baja').value || null,
         notas:        document.getElementById('f-notas').value.trim() || null,
       };
 
@@ -350,14 +364,20 @@ export class AdminPanel {
     });
   }
 
-  // ── Delete member ─────────────────────────────────────────────────────────
-  async _deleteMember(member) {
-    const confirmed = window.confirm(
-      `¿Eliminar a ${member.nombre} ${member.apellidos}?\nEsta acción no se puede deshacer.`
-    );
-    if (!confirmed) return;
-    const { error } = await supabase.from('socios').delete().eq('id', member.id);
-    if (error) { alert('Error al eliminar: ' + error.message); return; }
+  // ── Dar de baja ───────────────────────────────────────────────────────────
+  async _darDeBaja(member) {
+    const hoy = new Date().toISOString().slice(0, 10);
+    const { error } = await supabase
+      .from('socios').update({ fecha_baja: hoy }).eq('id', member.id);
+    if (error) { alert('Error: ' + error.message); return; }
+    await this._loadMembers();
+  }
+
+  // ── Reactivar ─────────────────────────────────────────────────────────────
+  async _reactivar(member) {
+    const { error } = await supabase
+      .from('socios').update({ fecha_baja: null }).eq('id', member.id);
+    if (error) { alert('Error: ' + error.message); return; }
     await this._loadMembers();
   }
 
