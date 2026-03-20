@@ -461,20 +461,14 @@ export class AdminPanel {
         errorEl.classList.remove('hidden');
         return;
       }
-      if (!pickedKcalle || !pickedNumPoli) {
-        errorEl.textContent = 'Debes seleccionar una dirección válida.';
-        errorEl.classList.remove('hidden');
-        return;
-      }
-
       const payload = {
         nombre,
         apellidos,
         telefono:     document.getElementById('f-telefono').value.trim() || null,
         email:        document.getElementById('f-email').value.trim()    || null,
-        kcalle:       pickedKcalle,
-        num_poli:     pickedNumPoli,
-        dir_display:  pickedDisplay,
+        kcalle:       pickedKcalle   || null,
+        num_poli:     pickedNumPoli  || null,
+        dir_display:  pickedDisplay  || null,
         fecha_alta:   document.getElementById('f-fecha').value,
         cuota_pagada: document.getElementById('f-cuota').checked,
         anno_cuota:   parseInt(document.getElementById('f-anno').value, 10),

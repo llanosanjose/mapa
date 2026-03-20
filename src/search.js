@@ -193,13 +193,17 @@ export class StreetSearch {
     const entry = this.index.get(this._selectedKcalle);
     if (!entry) return;
 
-    // Intentar con cero-padded (0003), sin ceros (3) y tal cual
+    // Intentar con cero-padded (0003), sin ceros (3), tal cual y variantes alfanuméricas (2240A → 02240A)
     const padded   = raw.padStart(4, '0');
-    const unpadded = String(parseInt(raw, 10) || raw);
-    const resolvedKey = entry.ndpu.has(padded)   ? padded
-                      : entry.ndpu.has(raw)      ? raw
-                      : entry.ndpu.has(unpadded) ? unpadded
-                      : null;
+    const alphaMatch = raw.match(/^(\d+)([a-zA-Z].*)$/);
+    const paddedAlpha = alphaMatch ? alphaMatch[1].padStart(4, '0') + alphaMatch[2].toUpperCase() : null;
+    const rawUpper = raw.toUpperCase();
+    const numOnly  = alphaMatch ? String(parseInt(alphaMatch[1], 10)) : String(parseInt(raw, 10) || raw);
+    const candidates = [padded, paddedAlpha, rawUpper, raw, numOnly].filter(Boolean);
+    // También buscar insensible a mayúsculas como último recurso
+    const resolvedKey = candidates.find(k => entry.ndpu.has(k))
+      ?? [...entry.ndpu.keys()].find(k => k.toLowerCase() === raw.toLowerCase())
+      ?? null;
     const feat = resolvedKey ? entry.ndpu.get(resolvedKey) : null;
 
     if (!feat) {
