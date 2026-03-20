@@ -1141,7 +1141,8 @@ html[data-theme="light"] #admin-panel { box-shadow: -6px 0 20px rgba(0,0,0,0.15)
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 80px;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .admin-row-btns { display: flex; gap: 4px; flex-shrink: 0; }
