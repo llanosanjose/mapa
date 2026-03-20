@@ -88,6 +88,9 @@ body {
 }
 button { cursor: pointer; font-family: inherit; }
 
+body.app-locked #map,
+body.app-locked #header { visibility: hidden; }
+
 /* ── Layout ─────────────────────────────────────────────────────────────── */
 #map {
   position: absolute;
@@ -840,6 +843,33 @@ html[data-theme="light"] .ol-scale-line {
 .icon-lock-open   { display: none;  }
 .icon-lock-closed { display: block; }
 
+/* ── Toast ──────────────────────────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 18px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 2000;
+  white-space: nowrap;
+}
+#toast.toast-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+#toast[data-type="ok"]  { color: var(--green); border-color: var(--green); }
+#toast[data-type="err"] { color: var(--red);   border-color: var(--red);   }
+
 /* ── Login modal ────────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
@@ -965,6 +995,49 @@ html[data-theme="light"] .ol-scale-line {
 #admin-panel.panel-closed { transform: translateX(340px); }
 html[data-theme="light"] #admin-panel { box-shadow: -6px 0 20px rgba(0,0,0,0.15); }
 
+/* ── Admin tabs ─────────────────────────────────────────────────────────── */
+.admin-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.admin-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 9px 0;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+.admin-tab:hover { color: var(--text-2); }
+.admin-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Users section ──────────────────────────────────────────────────────── */
+#admin-users-section {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+.admin-rol-select {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 6px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.admin-rol-select:focus { border-color: var(--accent); outline: none; }
+.admin-rol-select:disabled { opacity: 0.45; cursor: default; }
+
 .admin-header-right {
   display: flex;
   align-items: center;
@@ -975,10 +1048,6 @@ html[data-theme="light"] #admin-panel { box-shadow: -6px 0 20px rgba(0,0,0,0.15)
   font-size: 10px;
   color: var(--text-3);
   letter-spacing: 0.04em;
-  max-width: 110px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .panel-close-btn {
@@ -998,6 +1067,13 @@ html[data-theme="light"] #admin-panel { box-shadow: -6px 0 20px rgba(0,0,0,0.15)
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
+  border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0;
+}
+.admin-csv-toolbar {
+  display: flex;
+  gap: 6px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--border-dim);
   flex-shrink: 0;
 }
@@ -1303,6 +1379,51 @@ html[data-theme="light"] #admin-panel { box-shadow: -6px 0 20px rgba(0,0,0,0.15)
   gap: 8px;
   padding-top: 4px;
   flex-shrink: 0;
+}
+
+/* ── Password change form ────────────────────────────────────────────────── */
+.pwd-form {
+  position: absolute;
+  bottom: calc(var(--footer-h) + 8px);
+  left: 8px; right: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 500;
+}
+.pwd-form-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.pwd-form input {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.pwd-form input:focus { border-color: var(--accent); }
+.pwd-form-btns { display: flex; gap: 8px; margin-top: 2px; }
+.pwd-ok {
+  text-align: center;
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 8px 0;
+  letter-spacing: 0.06em;
 }
 
 /* ── Member card (search result) ─────────────────────────────────────────── */

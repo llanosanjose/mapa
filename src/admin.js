@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js';
-import { isLoggedIn, getUser, logout } from './auth.js';
+import { isLoggedIn, getUser, getRol, esPres, puedeGestionar, logout, cambiarPassword } from './auth.js';
+import { toast } from './toast.js';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -15,6 +16,7 @@ export class AdminPanel {
     this.adminList    = null;
     this.formWrap     = null;
     this.memberCard   = null;
+    this.usersSection = null;
     this._addressPickerResolve = null;
 
     this._assignRefs();
@@ -23,10 +25,11 @@ export class AdminPanel {
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   _assignRefs() {
-    this.panel      = document.getElementById('admin-panel');
-    this.adminList  = document.getElementById('admin-list');
-    this.formWrap   = document.getElementById('admin-form-wrap');
-    this.memberCard = document.getElementById('member-card');
+    this.panel        = document.getElementById('admin-panel');
+    this.adminList    = document.getElementById('admin-list');
+    this.formWrap     = document.getElementById('admin-form-wrap');
+    this.memberCard   = document.getElementById('member-card');
+    this.usersSection = document.getElementById('admin-users-section');
   }
 
   // ── Events ────────────────────────────────────────────────────────────────
@@ -34,24 +37,158 @@ export class AdminPanel {
     document.getElementById('admin-logout').addEventListener('click', () => logout());
     document.getElementById('close-admin').addEventListener('click', () => this.close());
     document.getElementById('admin-add-btn').addEventListener('click', () => this._showForm(null));
+    document.getElementById('admin-tabs').addEventListener('click', e => {
+      const tab = e.target.dataset.tab;
+      if (tab) this._switchTab(tab);
+    });
+    document.getElementById('admin-export-btn').addEventListener('click', () => this._exportCSV());
+    document.getElementById('admin-import-btn').addEventListener('click', () =>
+      document.getElementById('admin-import-input').click());
+    document.getElementById('admin-import-input').addEventListener('change', e => {
+      if (e.target.files[0]) this._importCSV(e.target.files[0]);
+      e.target.value = '';
+    });
     document.getElementById('admin-search-input').addEventListener('input', e => {
       this._filter = e.target.value.toLowerCase();
       this._renderList();
     });
+    document.getElementById('admin-pwd-btn').addEventListener('click', () => this._togglePwdForm());
   }
 
   // ── Panel open/close ──────────────────────────────────────────────────────
   async open() {
-    document.getElementById('admin-user-email').textContent = getUser()?.email ?? '';
+    const rol = getRol();
+    document.getElementById('admin-user-email').textContent =
+      `${getUser()?.email ?? ''} · ${rol ?? '?'}`;
+    document.getElementById('admin-add-btn').classList.toggle('hidden', !puedeGestionar());
+    document.getElementById('admin-csv-toolbar').classList.toggle('hidden', !puedeGestionar());
+    document.getElementById('admin-tabs').classList.toggle('hidden', !esPres());
     this.panel.classList.remove('panel-closed');
     this._adminBtn?.classList.add('active');
-    this._showList();
-    await this._loadMembers();
+    this._switchTab('socios');
   }
 
   close() {
     this.panel.classList.add('panel-closed');
     this._adminBtn?.classList.remove('active');
+  }
+
+  // ── Tab navigation ────────────────────────────────────────────────────────
+  _switchTab(tab) {
+    document.querySelectorAll('.admin-tab').forEach(btn =>
+      btn.classList.toggle('active', btn.dataset.tab === tab));
+
+    if (tab === 'socios') {
+      this.formWrap.classList.add('hidden');
+      this.usersSection.classList.add('hidden');
+      document.querySelector('.admin-toolbar').classList.remove('hidden');
+      document.getElementById('admin-csv-toolbar').classList.toggle('hidden', !puedeGestionar());
+      this.adminList.parentElement.classList.remove('hidden');
+      this._loadMembers();
+    } else if (tab === 'usuarios') {
+      this.formWrap.classList.add('hidden');
+      this.adminList.parentElement.classList.add('hidden');
+      document.querySelector('.admin-toolbar').classList.add('hidden');
+      document.getElementById('admin-csv-toolbar').classList.add('hidden');
+      this.usersSection.classList.remove('hidden');
+      this._loadUsers();
+    }
+  }
+
+  // ── Load / render users ───────────────────────────────────────────────────
+  async _loadUsers() {
+    this.usersSection.innerHTML = '<div class="admin-empty">Cargando…</div>';
+    const { data, error } = await supabase
+      .from('perfiles')
+      .select('id, rol, email')
+      .order('rol');
+    if (error) {
+      this.usersSection.innerHTML =
+        `<div class="admin-form-error">${error.message}</div>`;
+      return;
+    }
+    this._renderUsers(data);
+  }
+
+  _renderUsers(users) {
+    const ROLES = ['presidente', 'administrativo', 'vocal'];
+    this.usersSection.innerHTML = '';
+
+    if (!users.length) {
+      const empty = document.createElement('div');
+      empty.className = 'admin-empty';
+      empty.textContent = 'No hay usuarios registrados';
+      this.usersSection.appendChild(empty);
+      return;
+    }
+
+    const currentUserId = getUser()?.id;
+
+    users.forEach(u => {
+      const row = document.createElement('div');
+      row.className = 'admin-member-row';
+
+      const identity = document.createElement('span');
+      identity.className = 'admin-member-name';
+      identity.textContent = u.email ?? (u.id.slice(0, 8) + '…');
+      if (u.id === currentUserId) identity.textContent += ' (tú)';
+
+      const rolSelect = document.createElement('select');
+      rolSelect.className = 'admin-rol-select';
+      ROLES.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r;
+        opt.textContent = r;
+        opt.selected = r === u.rol;
+        rolSelect.appendChild(opt);
+      });
+      if (u.id === currentUserId) rolSelect.disabled = true;
+
+      rolSelect.addEventListener('change', async () => {
+        const prev = u.rol;
+        if (prev === 'presidente' && rolSelect.value !== 'presidente') {
+          const otrosPresidentes = users.filter(x => x.id !== u.id && x.rol === 'presidente');
+          if (!otrosPresidentes.length) {
+            rolSelect.value = prev;
+            alert('No se puede degradar al único presidente.');
+            return;
+          }
+        }
+        const { error } = await supabase
+          .from('perfiles').update({ rol: rolSelect.value }).eq('id', u.id);
+        if (error) {
+          rolSelect.value = prev;
+          toast('Error al cambiar rol: ' + error.message, 'err');
+        } else {
+          u.rol = rolSelect.value;
+          toast('Rol actualizado');
+        }
+      });
+
+      const btns = document.createElement('div');
+      btns.className = 'admin-row-btns';
+
+      if (u.id !== currentUserId) {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'admin-btn-sm admin-btn-del';
+        delBtn.textContent = 'Quitar';
+        delBtn.title = 'Quitar acceso al panel';
+        delBtn.addEventListener('click', async () => {
+          if (!confirm(`¿Quitar acceso a ${u.email ?? u.id}?`)) return;
+          const { error } = await supabase
+            .from('perfiles').delete().eq('id', u.id);
+          if (error) { toast('Error: ' + error.message, 'err'); return; }
+          toast('Acceso revocado');
+          await this._loadUsers();
+        });
+        btns.appendChild(delBtn);
+      }
+
+      row.appendChild(identity);
+      row.appendChild(rolSelect);
+      row.appendChild(btns);
+      this.usersSection.appendChild(row);
+    });
   }
 
   // ── Load members ──────────────────────────────────────────────────────────
@@ -105,24 +242,27 @@ export class AdminPanel {
       const inactive = !!m.fecha_baja;
       if (inactive) row.classList.add('admin-row-inactive');
 
+      const gestionar = puedeGestionar();
+
       const editBtn = document.createElement('button');
       editBtn.className = 'admin-btn-sm';
-      editBtn.textContent = 'Editar';
+      editBtn.textContent = gestionar ? 'Editar' : 'Ver';
       editBtn.addEventListener('click', e => { e.stopPropagation(); this._showForm(m); });
-
-      const toggleBtn = document.createElement('button');
-      if (inactive) {
-        toggleBtn.className = 'admin-btn-sm admin-btn-ok';
-        toggleBtn.textContent = 'Reactivar';
-        toggleBtn.addEventListener('click', e => { e.stopPropagation(); this._reactivar(m); });
-      } else {
-        toggleBtn.className = 'admin-btn-sm admin-btn-del';
-        toggleBtn.textContent = 'Dar de baja';
-        toggleBtn.addEventListener('click', e => { e.stopPropagation(); this._darDeBaja(m); });
-      }
-
       btns.appendChild(editBtn);
-      btns.appendChild(toggleBtn);
+
+      if (gestionar) {
+        const toggleBtn = document.createElement('button');
+        if (inactive) {
+          toggleBtn.className = 'admin-btn-sm admin-btn-ok';
+          toggleBtn.textContent = 'Reactivar';
+          toggleBtn.addEventListener('click', e => { e.stopPropagation(); this._reactivar(m); });
+        } else {
+          toggleBtn.className = 'admin-btn-sm admin-btn-del';
+          toggleBtn.textContent = 'Dar de baja';
+          toggleBtn.addEventListener('click', e => { e.stopPropagation(); this._darDeBaja(m); });
+        }
+        btns.appendChild(toggleBtn);
+      }
       row.appendChild(cuota);
       row.appendChild(name);
       row.appendChild(addr);
@@ -145,28 +285,31 @@ export class AdminPanel {
 
   // ── Form render ───────────────────────────────────────────────────────────
   _renderForm(member) {
-    const isEdit = member != null;
+    const isEdit   = member != null;
+    const soloVer  = !puedeGestionar();
+    const readOnly = soloVer ? 'readonly' : '';
+    const disabled = soloVer ? 'disabled' : '';
     this.formWrap.innerHTML = `
       <div class="admin-form-header">
-        <span>${isEdit ? 'EDITAR SOCIO' : 'NUEVO SOCIO'}</span>
+        <span>${soloVer ? 'VER SOCIO' : isEdit ? 'EDITAR SOCIO' : 'NUEVO SOCIO'}</span>
         <button class="admin-form-back" id="admin-form-back">← Volver</button>
       </div>
       <div class="admin-form-body">
         <div class="admin-field">
           <label>Nombre</label>
-          <input id="f-nombre" type="text" value="${member?.nombre ?? ''}" />
+          <input id="f-nombre" type="text" value="${member?.nombre ?? ''}" ${readOnly} />
         </div>
         <div class="admin-field">
           <label>Apellidos</label>
-          <input id="f-apellidos" type="text" value="${member?.apellidos ?? ''}" />
+          <input id="f-apellidos" type="text" value="${member?.apellidos ?? ''}" ${readOnly} />
         </div>
         <div class="admin-field">
           <label>Teléfono</label>
-          <input id="f-telefono" type="text" value="${member?.telefono ?? ''}" />
+          <input id="f-telefono" type="text" value="${member?.telefono ?? ''}" ${readOnly} />
         </div>
         <div class="admin-field">
           <label>Email</label>
-          <input id="f-email" type="email" value="${member?.email ?? ''}" />
+          <input id="f-email" type="email" value="${member?.email ?? ''}" ${readOnly} />
         </div>
         <div class="admin-field">
           <label>Dirección</label>
@@ -210,8 +353,8 @@ export class AdminPanel {
         </div>
         <div id="admin-form-error" class="admin-form-error hidden"></div>
         <div class="admin-form-footer">
-          <button class="admin-btn-primary" id="admin-form-save">Guardar</button>
-          <button class="admin-btn-sm" id="admin-form-cancel">Cancelar</button>
+          ${soloVer ? '' : `<button class="admin-btn-primary" id="admin-form-save">Guardar</button>`}
+          <button class="admin-btn-sm" id="admin-form-cancel">Cerrar</button>
         </div>
       </div>`;
 
@@ -359,6 +502,7 @@ export class AdminPanel {
         return;
       }
 
+      toast(isEdit ? 'Socio actualizado' : 'Socio creado');
       await this._loadMembers();
       this._showList();
     });
@@ -369,7 +513,8 @@ export class AdminPanel {
     const hoy = new Date().toISOString().slice(0, 10);
     const { error } = await supabase
       .from('socios').update({ fecha_baja: hoy }).eq('id', member.id);
-    if (error) { alert('Error: ' + error.message); return; }
+    if (error) { toast('Error: ' + error.message, 'err'); return; }
+    toast('Socio dado de baja');
     await this._loadMembers();
   }
 
@@ -377,8 +522,113 @@ export class AdminPanel {
   async _reactivar(member) {
     const { error } = await supabase
       .from('socios').update({ fecha_baja: null }).eq('id', member.id);
-    if (error) { alert('Error: ' + error.message); return; }
+    if (error) { toast('Error: ' + error.message, 'err'); return; }
+    toast('Socio reactivado');
     await this._loadMembers();
+  }
+
+  // ── Export CSV ────────────────────────────────────────────────────────────
+  _exportCSV() {
+    const FIELDS = ['id','nombre','apellidos','telefono','email','kcalle','num_poli',
+                    'dir_display','fecha_alta','cuota_pagada','anno_cuota','fecha_baja','notas'];
+    const esc = v => (v == null ? '' : String(v).replace(/\|/g, '/'));
+    const rows = [FIELDS.join('|')];
+    this._members.forEach(m => rows.push(FIELDS.map(f => esc(m[f])).join('|')));
+    const blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `socios_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast(`${this._members.length} socios exportados`);
+  }
+
+  // ── Import CSV ────────────────────────────────────────────────────────────
+  async _importCSV(file) {
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) { toast('CSV vacío o sin datos', 'err'); return; }
+
+    const parseRow = line => line.split('|');
+
+    const headers = parseRow(lines[0]);
+    const records = lines.slice(1).map(l => {
+      const vals = parseRow(l);
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = vals[i] ?? null; });
+      return obj;
+    });
+
+    // Normalizar tipos
+    const toNull = v => (v === '' || v == null) ? null : v;
+    const payload = records.map(r => ({
+      ...(r.id ? { id: r.id } : {}),
+      nombre:       toNull(r.nombre),
+      apellidos:    toNull(r.apellidos),
+      telefono:     toNull(r.telefono),
+      email:        toNull(r.email),
+      kcalle:       r.kcalle ? parseInt(r.kcalle, 10) : null,
+      num_poli:     toNull(r.num_poli),
+      dir_display:  toNull(r.dir_display),
+      fecha_alta:   toNull(r.fecha_alta),
+      cuota_pagada: r.cuota_pagada === 'true',
+      anno_cuota:   r.anno_cuota ? parseInt(r.anno_cuota, 10) : null,
+      fecha_baja:   toNull(r.fecha_baja),
+      notas:        toNull(r.notas),
+    }));
+
+    const { error } = await supabase.from('socios').upsert(payload);
+    if (error) { toast('Error al importar: ' + error.message, 'err'); return; }
+    toast(`${payload.length} socios importados`);
+    await this._loadMembers();
+  }
+
+  // ── Cambio de contraseña ──────────────────────────────────────────────────
+  _togglePwdForm() {
+    const existing = document.getElementById('pwd-form-wrap');
+    if (existing) { existing.remove(); return; }
+
+    const wrap = document.createElement('div');
+    wrap.id = 'pwd-form-wrap';
+    wrap.className = 'pwd-form';
+    wrap.innerHTML = `
+      <div class="pwd-form-title">Cambiar contraseña</div>
+      <input class="pwd-new"     type="password" placeholder="Nueva contraseña" />
+      <input class="pwd-confirm" type="password" placeholder="Confirmar contraseña" />
+      <div class="pwd-error admin-form-error hidden"></div>
+      <div class="pwd-form-btns">
+        <button class="admin-btn-primary pwd-save">Guardar</button>
+        <button class="admin-btn-sm pwd-cancel">Cancelar</button>
+      </div>`;
+
+    this.panel.appendChild(wrap);
+
+    wrap.addEventListener('click', async (e) => {
+      if (e.target.classList.contains('pwd-cancel')) { wrap.remove(); return; }
+      if (!e.target.classList.contains('pwd-save')) return;
+
+      const errorEl = wrap.querySelector('.pwd-error');
+      const nueva   = wrap.querySelector('.pwd-new').value;
+      const confirm = wrap.querySelector('.pwd-confirm').value;
+      errorEl.classList.add('hidden');
+
+      if (nueva.length < 6) {
+        errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+        errorEl.classList.remove('hidden'); return;
+      }
+      if (nueva !== confirm) {
+        errorEl.textContent = 'Las contraseñas no coinciden.';
+        errorEl.classList.remove('hidden'); return;
+      }
+      try {
+        await cambiarPassword(nueva);
+        wrap.innerHTML = '<div class="pwd-ok">✓ Contraseña cambiada correctamente</div>';
+        setTimeout(() => wrap.remove(), 3000);
+      } catch (err) {
+        errorEl.textContent = 'Error: ' + err.message;
+        errorEl.classList.remove('hidden');
+      }
+    });
   }
 
   // ── Member card (shown from map search) ───────────────────────────────────

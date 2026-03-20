@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/node_modules/ol/ol.css" />
   <link rel="stylesheet" href="/src/style.css" />
 </head>
-<body>
+<body class="app-locked">
 
   <!-- HEADER -->
   <header id="header">
@@ -123,11 +123,10 @@
   </header>
 
   <!-- LOGIN MODAL -->
-  <div id="login-modal" class="modal-overlay hidden">
+  <div id="login-modal" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
         <span>ÁREA PRIVADA</span>
-        <button id="modal-close">×</button>
       </div>
       <form id="login-form" class="modal-body">
         <div class="modal-field">
@@ -150,18 +149,29 @@
       <span>Junta Directiva</span>
       <div class="admin-header-right">
         <span id="admin-user-email" class="admin-user-email"></span>
+        <button id="admin-pwd-btn" class="admin-btn-sm" title="Cambiar contraseña">🔑</button>
         <button id="admin-logout" class="admin-btn-sm">Salir</button>
         <button id="close-admin" class="panel-close-btn">×</button>
       </div>
+    </div>
+    <div id="admin-tabs" class="admin-tabs hidden">
+      <button class="admin-tab active" data-tab="socios">Socios</button>
+      <button class="admin-tab" data-tab="usuarios">Usuarios</button>
     </div>
     <div class="admin-toolbar">
       <input type="search" id="admin-search-input" placeholder="Filtrar socios…" autocomplete="off" />
       <button id="admin-add-btn" class="admin-btn-primary">+ Nuevo</button>
     </div>
+    <div id="admin-csv-toolbar" class="admin-csv-toolbar hidden">
+      <button id="admin-export-btn" class="admin-btn-sm" title="Exportar socios a CSV">↓ CSV</button>
+      <button id="admin-import-btn" class="admin-btn-sm" title="Importar socios desde CSV">↑ CSV</button>
+      <input type="file" id="admin-import-input" accept=".csv" class="hidden" />
+    </div>
     <div class="admin-list-section">
       <div id="admin-list"></div>
     </div>
     <div id="admin-form-wrap" class="hidden"></div>
+    <div id="admin-users-section" class="hidden"></div>
   </aside>
 
   <!-- LAYERS PANEL -->

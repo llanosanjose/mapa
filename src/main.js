@@ -14,7 +14,8 @@ import { ScaleLine, defaults as defaultControls } from 'ol/control';
 import { LAYER_DEFS, highlightLayer, highlightSource } from './layers.js';
 import { MeasureTool } from './measure.js';
 import { StreetSearch } from './search.js';
-import { onAuthChange, isLoggedIn, login, logout } from './auth.js';
+import { onAuthChange, onPasswordRecovery, isLoggedIn, login, logout, puedeVerFichaMapa } from './auth.js';
+import { toast } from './toast.js';
 import { AdminPanel } from './admin.js';
 
 // ── Mapa ───────────────────────────────────────────────────────────────────
@@ -190,7 +191,7 @@ const adminPanel = new AdminPanel(search, btnAdmin);
 
 // Callback del buscador → buscar socio en esa dirección
 search._onAddressResolved = (kcalle, numPoli) => {
-  adminPanel.showMemberCard(kcalle, numPoli);
+  if (isLoggedIn() && puedeVerFichaMapa()) adminPanel.showMemberCard(kcalle, numPoli);
 };
 
 // Ocultar tarjeta al limpiar búsqueda o al empezar a teclear
@@ -204,30 +205,27 @@ const loginForm     = document.getElementById('login-form');
 const loginError    = document.getElementById('login-error');
 const loginSubmit   = document.getElementById('login-submit');
 
+onPasswordRecovery(async () => {
+  await adminPanel.open();
+  adminPanel._togglePwdForm();
+});
+
+let _wasLoggedIn = false;
 onAuthChange(session => {
   const loggedIn = session != null;
-  // Solo actualizar el icono, el estado active lo gestiona el panel al abrir/cerrar
+  if (_wasLoggedIn && !loggedIn) toast('Sesión expirada', 'err');
+  _wasLoggedIn = loggedIn;
+  document.body.classList.toggle('app-locked', !loggedIn);
+  loginModal.classList.toggle('hidden', loggedIn);
   btnAdmin.querySelector('.icon-lock-closed').style.display = loggedIn ? 'none'  : 'block';
   btnAdmin.querySelector('.icon-lock-open').style.display   = loggedIn ? 'block' : 'none';
   if (!loggedIn) adminPanel.close();
 });
 
 btnAdmin.addEventListener('click', () => {
-  if (isLoggedIn()) {
-    adminPanel.panel.classList.contains('panel-closed')
-      ? adminPanel.open()
-      : adminPanel.close();
-  } else {
-    loginModal.classList.remove('hidden');
-    document.getElementById('login-email').focus();
-  }
-});
-
-document.getElementById('modal-close').addEventListener('click', () => {
-  loginModal.classList.add('hidden');
-});
-loginModal.addEventListener('click', e => {
-  if (e.target === loginModal) loginModal.classList.add('hidden');
+  adminPanel.panel.classList.contains('panel-closed')
+    ? adminPanel.open()
+    : adminPanel.close();
 });
 
 loginForm.addEventListener('submit', async e => {
@@ -240,7 +238,6 @@ loginForm.addEventListener('submit', async e => {
       document.getElementById('login-email').value,
       document.getElementById('login-password').value
     );
-    loginModal.classList.add('hidden');
     loginForm.reset();
     adminPanel.open();
   } catch (err) {
