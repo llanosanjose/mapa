@@ -1,5 +1,7 @@
 node_modules/
 dist/
+.env
+.env.local
 
 # Archivos fuente pesados no usados por la app
 cartografia_elche/cartografia_diseminado.geojson

@@ -19,6 +19,7 @@ export class StreetSearch {
 
     this._selectedKcalle = null;
     this._ready = false;
+    this._onAddressResolved = null; // callback(kcalle, numPoli)
 
     // DOM refs
     this.inputEl     = document.getElementById('search-input');
@@ -33,6 +34,8 @@ export class StreetSearch {
     this._bindEvents();
     this._loadData();
   }
+
+  getIndex() { return this.index; }
 
   async _loadData() {
     try {
@@ -193,7 +196,11 @@ export class StreetSearch {
     // Intentar con cero-padded (0003), sin ceros (3) y tal cual
     const padded   = raw.padStart(4, '0');
     const unpadded = String(parseInt(raw, 10) || raw);
-    const feat = entry.ndpu.get(padded) || entry.ndpu.get(raw) || entry.ndpu.get(unpadded);
+    const resolvedKey = entry.ndpu.has(padded)   ? padded
+                      : entry.ndpu.has(raw)      ? raw
+                      : entry.ndpu.has(unpadded) ? unpadded
+                      : null;
+    const feat = resolvedKey ? entry.ndpu.get(resolvedKey) : null;
 
     if (!feat) {
       this.numberInput.style.borderColor = 'var(--red)';
@@ -205,6 +212,8 @@ export class StreetSearch {
     this.highlightSource.addFeature(feat);
     const coord = feat.getGeometry().getCoordinates();
     this.map.getView().animate({ center: coord, zoom: 19, duration: 700 });
+
+    this._onAddressResolved?.(this._selectedKcalle, resolvedKey);
   }
 
   _clearAll() {

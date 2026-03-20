@@ -14,6 +14,8 @@ import { ScaleLine, defaults as defaultControls } from 'ol/control';
 import { LAYER_DEFS, highlightLayer, highlightSource } from './layers.js';
 import { MeasureTool } from './measure.js';
 import { StreetSearch } from './search.js';
+import { onAuthChange, isLoggedIn, login, logout } from './auth.js';
+import { AdminPanel } from './admin.js';
 
 // ── Mapa ───────────────────────────────────────────────────────────────────
 const map = new Map({
@@ -181,6 +183,74 @@ document.getElementById('btn-measure').addEventListener('click', () => measureTo
 
 // ── Buscador ───────────────────────────────────────────────────────────────
 const search = new StreetSearch(map, highlightSource);
+
+// ── Área privada ───────────────────────────────────────────────────────────
+const btnAdmin = document.getElementById('btn-admin');
+const adminPanel = new AdminPanel(search, btnAdmin);
+
+// Callback del buscador → buscar socio en esa dirección
+search._onAddressResolved = (kcalle, numPoli) => {
+  adminPanel.showMemberCard(kcalle, numPoli);
+};
+
+// Ocultar tarjeta al limpiar búsqueda o al empezar a teclear
+const origClearAll = search._clearAll.bind(search);
+search._clearAll = function () { origClearAll(); adminPanel.hideMemberCard(); };
+search.inputEl.addEventListener('input', () => adminPanel.hideMemberCard());
+
+// Botón candado en toolbar
+const loginModal    = document.getElementById('login-modal');
+const loginForm     = document.getElementById('login-form');
+const loginError    = document.getElementById('login-error');
+const loginSubmit   = document.getElementById('login-submit');
+
+onAuthChange(session => {
+  const loggedIn = session != null;
+  // Solo actualizar el icono, el estado active lo gestiona el panel al abrir/cerrar
+  btnAdmin.querySelector('.icon-lock-closed').style.display = loggedIn ? 'none'  : 'block';
+  btnAdmin.querySelector('.icon-lock-open').style.display   = loggedIn ? 'block' : 'none';
+  if (!loggedIn) adminPanel.close();
+});
+
+btnAdmin.addEventListener('click', () => {
+  if (isLoggedIn()) {
+    adminPanel.panel.classList.contains('panel-closed')
+      ? adminPanel.open()
+      : adminPanel.close();
+  } else {
+    loginModal.classList.remove('hidden');
+    document.getElementById('login-email').focus();
+  }
+});
+
+document.getElementById('modal-close').addEventListener('click', () => {
+  loginModal.classList.add('hidden');
+});
+loginModal.addEventListener('click', e => {
+  if (e.target === loginModal) loginModal.classList.add('hidden');
+});
+
+loginForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  loginError.classList.add('hidden');
+  loginSubmit.disabled = true;
+  loginSubmit.textContent = 'Accediendo…';
+  try {
+    await login(
+      document.getElementById('login-email').value,
+      document.getElementById('login-password').value
+    );
+    loginModal.classList.add('hidden');
+    loginForm.reset();
+    adminPanel.open();
+  } catch (err) {
+    loginError.textContent = 'Email o contraseña incorrectos.';
+    loginError.classList.remove('hidden');
+  } finally {
+    loginSubmit.disabled = false;
+    loginSubmit.textContent = 'Acceder';
+  }
+});
 
 // ── Atajos de teclado ──────────────────────────────────────────────────────
 document.addEventListener('keydown', (e) => {

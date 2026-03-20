@@ -66,6 +66,20 @@
 
       <div class="toolbar-sep"></div>
 
+      <!-- Área privada -->
+      <button id="btn-admin" class="tool-btn tool-btn-icon" title="Área privada — Junta Directiva" aria-label="Área privada">
+        <svg class="icon-lock-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <svg class="icon-lock-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+        </svg>
+      </button>
+
+      <div class="toolbar-sep"></div>
+
       <!-- Theme toggle -->
       <button id="btn-theme" class="tool-btn tool-btn-icon" title="Cambiar a modo claro / oscuro" aria-label="Cambiar tema">
         <!-- Sun icon — shown in dark mode (switch to light) -->
@@ -103,8 +117,52 @@
         <button id="search-reset" title="Nueva búsqueda">↩</button>
       </div>
       <ul id="search-results"></ul>
+      <!-- Tarjeta de socio (visible solo si está identificado y hay coincidencia) -->
+      <div id="member-card" class="hidden"></div>
     </div>
   </header>
+
+  <!-- LOGIN MODAL -->
+  <div id="login-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>ÁREA PRIVADA</span>
+        <button id="modal-close">×</button>
+      </div>
+      <form id="login-form" class="modal-body">
+        <div class="modal-field">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" autocomplete="username" required />
+        </div>
+        <div class="modal-field">
+          <label for="login-password">Contraseña</label>
+          <input type="password" id="login-password" autocomplete="current-password" required />
+        </div>
+        <div id="login-error" class="modal-error hidden"></div>
+        <button type="submit" id="login-submit">Acceder</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <aside id="admin-panel" class="panel-closed">
+    <div class="panel-header">
+      <span>Junta Directiva</span>
+      <div class="admin-header-right">
+        <span id="admin-user-email" class="admin-user-email"></span>
+        <button id="admin-logout" class="admin-btn-sm">Salir</button>
+        <button id="close-admin" class="panel-close-btn">×</button>
+      </div>
+    </div>
+    <div class="admin-toolbar">
+      <input type="search" id="admin-search-input" placeholder="Filtrar socios…" autocomplete="off" />
+      <button id="admin-add-btn" class="admin-btn-primary">+ Nuevo</button>
+    </div>
+    <div class="admin-list-section">
+      <div id="admin-list"></div>
+    </div>
+    <div id="admin-form-wrap" class="hidden"></div>
+  </aside>
 
   <!-- LAYERS PANEL -->
   <aside id="layers-panel" class="panel-closed">
