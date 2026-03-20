@@ -423,20 +423,24 @@ export class AdminPanel {
       if (!selectedEntry) return;
       const raw = addrNumInput.value.trim();
       if (!raw) return;
-      const padded   = raw.padStart(4, '0');
-      const unpadded = String(parseInt(raw, 10) || raw);
-      const resolvedKey = selectedEntry.ndpu.has(padded)   ? padded
-                        : selectedEntry.ndpu.has(raw)      ? raw
-                        : selectedEntry.ndpu.has(unpadded) ? unpadded
-                        : null;
+      const padded     = raw.padStart(4, '0');
+      const alphaMatch = raw.match(/^(\d+)([a-zA-Z].*)$/);
+      const paddedAlpha = alphaMatch ? alphaMatch[1].padStart(4, '0') + alphaMatch[2].toUpperCase() : null;
+      const rawUpper   = raw.toUpperCase();
+      const numOnly    = alphaMatch ? String(parseInt(alphaMatch[1], 10)) : String(parseInt(raw, 10) || raw);
+      const candidates = [padded, paddedAlpha, rawUpper, raw, numOnly].filter(Boolean);
+      const resolvedKey = candidates.find(k => selectedEntry.ndpu.has(k))
+        ?? [...selectedEntry.ndpu.keys()].find(k => k.toLowerCase() === raw.toLowerCase())
+        ?? null;
       if (!resolvedKey) {
         addrNumInput.style.borderColor = 'var(--red)';
         setTimeout(() => { addrNumInput.style.borderColor = ''; }, 1500);
         return;
       }
+      const displayNum = resolvedKey.replace(/^0+(\d)/, '$1'); // quitar ceros iniciales
       pickedKcalle  = selectedEntry.kcalle;
       pickedNumPoli = resolvedKey;
-      pickedDisplay = `${selectedEntry.nomvia} nº ${parseInt(resolvedKey, 10)}`;
+      pickedDisplay = `${selectedEntry.nomvia} nº ${displayNum}`;
       addrDisplay.innerHTML = `<span class="addr-ok">${pickedDisplay}</span>`;
       addrSearchWrap.classList.add('hidden');
       addrStreetInput.value = '';
