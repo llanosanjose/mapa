@@ -36,6 +36,10 @@ export class AdminPanel {
   _bindEvents() {
     document.getElementById('admin-logout').addEventListener('click', () => logout());
     document.getElementById('close-admin').addEventListener('click', () => this.close());
+    document.getElementById('expand-admin').addEventListener('click', () => {
+      const expanded = this.panel.classList.toggle('panel-expanded');
+      document.getElementById('expand-admin').textContent = expanded ? '⤡' : '⤢';
+    });
     document.getElementById('admin-add-btn').addEventListener('click', () => this._showForm(null));
     document.getElementById('admin-tabs').addEventListener('click', e => {
       const tab = e.target.dataset.tab;
@@ -70,6 +74,8 @@ export class AdminPanel {
 
   close() {
     this.panel.classList.add('panel-closed');
+    this.panel.classList.remove('panel-expanded');
+    document.getElementById('expand-admin').textContent = '⤢';
     this._adminBtn?.classList.remove('active');
   }
 

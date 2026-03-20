@@ -993,6 +993,7 @@ html[data-theme="light"] .ol-scale-line {
   box-shadow: -6px 0 30px rgba(0,0,0,0.5);
 }
 #admin-panel.panel-closed { transform: translateX(340px); }
+#admin-panel.panel-expanded { width: auto; left: 0; }
 html[data-theme="light"] #admin-panel { box-shadow: -6px 0 20px rgba(0,0,0,0.15); }
 
 /* ── Admin tabs ─────────────────────────────────────────────────────────── */
