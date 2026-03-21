@@ -240,6 +240,7 @@ onAuthChange(session => {
     adminPanel.close();
     membersLayer.hide();
     mapToggleBtn.textContent = '📍 Socios en mapa';
+    document.getElementById('map-popup')?.classList.remove('mp-show');
   }
 });
 
@@ -298,4 +299,93 @@ document.getElementById('btn-theme').addEventListener('click', () => {
   const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
   root.setAttribute('data-theme', next);
   localStorage.setItem('sigelx-theme', next);
+});
+
+// ── Popup de socio al clicar en el mapa ────────────────────────────────────
+const mapPopup     = document.getElementById('map-popup');
+const mapPopupBody = document.getElementById('map-popup-body');
+
+function _badgeHtml(m) {
+  if (m.fecha_baja) return `<span class="mp-badge mp-baja">Baja</span>`;
+  return m.cuota_pagada
+    ? `<span class="mp-badge cuota-ok">✓ Cuota ${m.anno_cuota ?? ''}</span>`
+    : `<span class="mp-badge cuota-ko">Pendiente ${m.anno_cuota ?? ''}</span>`;
+}
+
+function showMapPopup(members, pixel) {
+  mapPopupBody.innerHTML = members.map((m, i) => `
+    <div class="mp-member${i > 0 ? ' mp-sep' : ''}">
+      <div class="mp-head">
+        <span class="mp-name">${m.apellidos}, ${m.nombre}</span>
+        ${_badgeHtml(m)}
+      </div>
+      ${i === 0 && m.dir_display ? `<div class="mp-addr">${m.dir_display}</div>` : ''}
+      ${m.telefono ? `<div class="mp-row">📞 <strong>${m.telefono}</strong></div>` : ''}
+      ${m.email    ? `<div class="mp-row">✉ <strong>${m.email}</strong></div>`    : ''}
+      ${m.notas    ? `<div class="mp-notes">${m.notas}</div>`                     : ''}
+    </div>
+  `).join('');
+
+  // Desktop: posicionar cerca del click
+  if (window.innerWidth > 767) {
+    const mapRect = document.getElementById('map').getBoundingClientRect();
+    const px = mapRect.left + pixel[0];
+    const py = mapRect.top  + pixel[1];
+    mapPopup.style.left      = (px + 14) + 'px';
+    mapPopup.style.top       = (py - 14) + 'px';
+    mapPopup.style.transform = 'translateY(-100%)';
+    mapPopup.style.bottom    = '';
+    mapPopup.style.right     = '';
+  } else {
+    // Móvil: bottom sheet — CSS lo posiciona, limpiar estilos inline del desktop
+    mapPopup.style.left = mapPopup.style.top = mapPopup.style.transform = '';
+  }
+
+  mapPopup.classList.add('mp-show');
+
+  // Desktop: ajustar si se sale del viewport
+  if (window.innerWidth > 767) {
+    requestAnimationFrame(() => {
+      const pr = mapPopup.getBoundingClientRect();
+      if (pr.right > window.innerWidth - 8)
+        mapPopup.style.left = (parseFloat(mapPopup.style.left) - pr.width - 28) + 'px';
+      if (pr.top < 60)
+        mapPopup.style.transform = 'translateY(14px)';
+    });
+  }
+}
+
+function hideMapPopup() {
+  mapPopup.classList.remove('mp-show');
+}
+
+document.getElementById('map-popup-close').addEventListener('click', hideMapPopup);
+
+// Clic en el mapa: mostrar popup si hay socio, cerrar si no
+map.on('singleclick', evt => {
+  if (!membersLayer.layer.getVisible()) return;
+  let hit = false;
+  map.forEachFeatureAtPixel(evt.pixel, (feature, layer) => {
+    if (layer === membersLayer.layer) {
+      hit = true;
+      showMapPopup(feature.get('members'), evt.pixel);
+      return true;
+    }
+  }, { hitTolerance: 10 });
+  if (!hit) hideMapPopup();
+});
+
+// Cursor pointer al pasar sobre un socio
+map.on('pointermove', evt => {
+  if (!membersLayer.layer.getVisible()) { map.getTargetElement().style.cursor = ''; return; }
+  const hit = map.hasFeatureAtPixel(evt.pixel, {
+    layerFilter: l => l === membersLayer.layer,
+    hitTolerance: 8,
+  });
+  map.getTargetElement().style.cursor = hit ? 'pointer' : '';
+});
+
+// Cerrar popup con Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') hideMapPopup();
 });

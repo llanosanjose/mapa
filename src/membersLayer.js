@@ -20,7 +20,7 @@ function memberStyle(feature) {
     }),
     text: new Text({
       text:     label,
-      font:     '600 12px Rajdhani, sans-serif',
+      font:     '700 12px Nunito, sans-serif',
       fill:     new Fill({ color: '#ffffff' }),
       stroke:   new Stroke({ color: '#0d1017', width: 3 }),
       offsetY:  18,
@@ -58,7 +58,7 @@ export class MembersLayer {
   async _load(searchIndex) {
     const { data, error } = await supabase
       .from('socios')
-      .select('nombre, apellidos, kcalle, num_poli, cuota_pagada, fecha_baja');
+      .select('nombre, apellidos, kcalle, num_poli, cuota_pagada, fecha_baja, telefono, email, dir_display, notas, anno_cuota');
     if (error) {
       console.error('[MembersLayer]', error);
       return 0;
@@ -92,6 +92,9 @@ export class MembersLayer {
       const alguno = members.find(m => !m.fecha_baja) ?? members[0];
       f.set('cuota_pagada', alguno.cuota_pagada);
       f.set('inactive', members.every(m => !!m.fecha_baja));
+
+      // Datos completos para el popup al clicar
+      f.set('members', members);
 
       features.push(f);
     }
