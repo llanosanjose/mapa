@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { isLoggedIn, getUser, getRol, esPres, puedeGestionar, logout, cambiarPassword } from './auth.js';
+import { isLoggedIn, getUser, getRol, esPres, puedeGestionar, puedeVerFichaMapa, logout, cambiarPassword } from './auth.js';
 import { toast } from './toast.js';
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -67,6 +67,7 @@ export class AdminPanel {
     document.getElementById('admin-add-btn').classList.toggle('hidden', !puedeGestionar());
     document.getElementById('admin-csv-toolbar').classList.toggle('hidden', !puedeGestionar());
     document.getElementById('admin-tabs').classList.toggle('hidden', !esPres());
+    document.getElementById('admin-map-toolbar').classList.toggle('hidden', !puedeVerFichaMapa());
     this.panel.classList.remove('panel-closed');
     this._adminBtn?.classList.add('active');
     this._switchTab('socios');

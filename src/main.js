@@ -12,6 +12,7 @@ import { fromLonLat, toLonLat } from 'ol/proj';
 import { ScaleLine, defaults as defaultControls } from 'ol/control';
 
 import { LAYER_DEFS, highlightLayer, highlightSource } from './layers.js';
+import { MembersLayer } from './membersLayer.js';
 import { MeasureTool } from './measure.js';
 import { StreetSearch } from './search.js';
 import { onAuthChange, onPasswordRecovery, isLoggedIn, login, logout, puedeVerFichaMapa } from './auth.js';
@@ -19,9 +20,11 @@ import { toast } from './toast.js';
 import { AdminPanel } from './admin.js';
 
 // ── Mapa ───────────────────────────────────────────────────────────────────
+const membersLayer = new MembersLayer();
+
 const map = new Map({
   target: 'map',
-  layers: LAYER_DEFS.map(d => d.layer).concat(highlightLayer),
+  layers: LAYER_DEFS.map(d => d.layer).concat(highlightLayer, membersLayer.layer),
   view: new View({
     center: fromLonLat([-0.7425036435362692, 38.25367737126443]),
     zoom: 17,
@@ -189,6 +192,19 @@ const search = new StreetSearch(map, highlightSource);
 const btnAdmin = document.getElementById('btn-admin');
 const adminPanel = new AdminPanel(search, btnAdmin);
 
+// ── Capa de socios en el mapa ──────────────────────────────────────────────
+const mapToggleBtn = document.getElementById('admin-map-toggle-btn');
+mapToggleBtn.addEventListener('click', async () => {
+  if (!search._ready) {
+    toast('Aún cargando datos cartográficos…');
+    return;
+  }
+  mapToggleBtn.disabled = true;
+  const visible = await membersLayer.toggle(search.getIndex());
+  mapToggleBtn.disabled = false;
+  mapToggleBtn.textContent = visible ? '🗺 Ocultar socios' : '📍 Socios en mapa';
+});
+
 // Callback del buscador → buscar socio en esa dirección
 search._onAddressResolved = (kcalle, numPoli) => {
   if (isLoggedIn() && puedeVerFichaMapa()) adminPanel.showMemberCard(kcalle, numPoli);
@@ -219,7 +235,11 @@ onAuthChange(session => {
   loginModal.classList.toggle('hidden', loggedIn);
   btnAdmin.querySelector('.icon-lock-closed').style.display = loggedIn ? 'none'  : 'block';
   btnAdmin.querySelector('.icon-lock-open').style.display   = loggedIn ? 'block' : 'none';
-  if (!loggedIn) adminPanel.close();
+  if (!loggedIn) {
+    adminPanel.close();
+    membersLayer.hide();
+    mapToggleBtn.textContent = '📍 Socios en mapa';
+  }
 });
 
 btnAdmin.addEventListener('click', () => {
