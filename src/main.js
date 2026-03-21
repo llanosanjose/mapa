@@ -1,7 +1,8 @@
-import '@fontsource/rajdhani/400.css';
-import '@fontsource/rajdhani/500.css';
-import '@fontsource/rajdhani/600.css';
-import '@fontsource/rajdhani/700.css';
+import '@fontsource/nunito/400.css';
+import '@fontsource/nunito/500.css';
+import '@fontsource/nunito/600.css';
+import '@fontsource/nunito/700.css';
+import '@fontsource/nunito/800.css';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
 import '@fontsource/ibm-plex-mono/600.css';
