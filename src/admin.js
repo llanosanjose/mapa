@@ -1,7 +1,7 @@
 import { supabase } from './supabase.js';
 import { isLoggedIn, getUser, getRol, esPres, puedeGestionar, puedeVerFichaMapa, logout, cambiarPassword } from './auth.js';
 import { toast } from './toast.js';
-import { generateRecibos } from './receipts.js';
+import { generateRecibos, importeALetras } from './receipts.js';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -699,7 +699,7 @@ export class AdminPanel {
     const year         = parseInt(document.getElementById('rec-year').value, 10);
     const month        = parseInt(document.getElementById('rec-month').value, 10);
     const importe      = parseFloat(document.getElementById('rec-importe').value) || 15;
-    const importeTexto = document.getElementById('rec-importe-texto').value.trim() || 'quince euros';
+    const importeTexto = importeALetras(importe);
     const cobrador     = document.getElementById('rec-cobrador').value.trim();
     const startNum     = parseInt(document.getElementById('rec-start-num').value, 10) || 1;
 
