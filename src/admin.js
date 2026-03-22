@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 import { isLoggedIn, getUser, getRol, esPres, puedeGestionar, puedeVerFichaMapa, logout, cambiarPassword } from './auth.js';
 import { toast } from './toast.js';
+import { generateRecibos } from './receipts.js';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -12,11 +13,12 @@ export class AdminPanel {
     this._filter  = '';
 
     // DOM refs assigned in _assignRefs()
-    this.panel        = null;
-    this.adminList    = null;
-    this.formWrap     = null;
-    this.memberCard   = null;
-    this.usersSection = null;
+    this.panel           = null;
+    this.adminList       = null;
+    this.formWrap        = null;
+    this.memberCard      = null;
+    this.usersSection    = null;
+    this.receiptsSection = null;
     this._addressPickerResolve = null;
 
     this._assignRefs();
@@ -25,11 +27,12 @@ export class AdminPanel {
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   _assignRefs() {
-    this.panel        = document.getElementById('admin-panel');
-    this.adminList    = document.getElementById('admin-list');
-    this.formWrap     = document.getElementById('admin-form-wrap');
-    this.memberCard   = document.getElementById('member-card');
-    this.usersSection = document.getElementById('admin-users-section');
+    this.panel           = document.getElementById('admin-panel');
+    this.adminList       = document.getElementById('admin-list');
+    this.formWrap        = document.getElementById('admin-form-wrap');
+    this.memberCard      = document.getElementById('member-card');
+    this.usersSection    = document.getElementById('admin-users-section');
+    this.receiptsSection = document.getElementById('admin-receipts-section');
   }
 
   // ── Events ────────────────────────────────────────────────────────────────
@@ -57,6 +60,12 @@ export class AdminPanel {
       this._renderList();
     });
     document.getElementById('admin-pwd-btn').addEventListener('click', () => this._togglePwdForm());
+
+    // Recibos mode toggle
+    document.querySelectorAll('input[name="rec-mode"]').forEach(radio => {
+      radio.addEventListener('change', () => this._onRecModeChange());
+    });
+    document.getElementById('rec-generate-btn').addEventListener('click', () => this._generateRecibos());
   }
 
   // ── Panel open/close ──────────────────────────────────────────────────────
@@ -66,8 +75,13 @@ export class AdminPanel {
       `${getUser()?.email ?? ''} · ${rol ?? '?'}`;
     document.getElementById('admin-add-btn').classList.toggle('hidden', !puedeGestionar());
     document.getElementById('admin-csv-toolbar').classList.toggle('hidden', !puedeGestionar());
-    document.getElementById('admin-tabs').classList.toggle('hidden', !esPres());
+    document.getElementById('admin-tabs').classList.toggle('hidden', !puedeGestionar());
+    document.querySelector('[data-tab="usuarios"]')?.classList.toggle('hidden', !esPres());
     document.getElementById('admin-map-toolbar').classList.toggle('hidden', !puedeVerFichaMapa());
+    // Set default year/month in receipts form
+    const now = new Date();
+    document.getElementById('rec-year').value = now.getFullYear();
+    document.getElementById('rec-month').value = now.getMonth() + 1;
     this.panel.classList.remove('panel-closed');
     this._adminBtn?.classList.add('active');
     this._switchTab('socios');
@@ -85,20 +99,27 @@ export class AdminPanel {
     document.querySelectorAll('.admin-tab').forEach(btn =>
       btn.classList.toggle('active', btn.dataset.tab === tab));
 
+    // Hide everything first
+    this.formWrap.classList.add('hidden');
+    this.usersSection.classList.add('hidden');
+    this.receiptsSection.classList.add('hidden');
+    this.adminList.parentElement.classList.add('hidden');
+    document.querySelector('.admin-toolbar').classList.add('hidden');
+    document.getElementById('admin-csv-toolbar').classList.add('hidden');
+    document.getElementById('admin-map-toolbar').classList.add('hidden');
+
     if (tab === 'socios') {
-      this.formWrap.classList.add('hidden');
-      this.usersSection.classList.add('hidden');
       document.querySelector('.admin-toolbar').classList.remove('hidden');
       document.getElementById('admin-csv-toolbar').classList.toggle('hidden', !puedeGestionar());
+      document.getElementById('admin-map-toolbar').classList.toggle('hidden', !puedeVerFichaMapa());
       this.adminList.parentElement.classList.remove('hidden');
       this._loadMembers();
     } else if (tab === 'usuarios') {
-      this.formWrap.classList.add('hidden');
-      this.adminList.parentElement.classList.add('hidden');
-      document.querySelector('.admin-toolbar').classList.add('hidden');
-      document.getElementById('admin-csv-toolbar').classList.add('hidden');
       this.usersSection.classList.remove('hidden');
       this._loadUsers();
+    } else if (tab === 'recibos') {
+      this.receiptsSection.classList.remove('hidden');
+      this._initRecibosForm();
     }
   }
 
@@ -634,6 +655,96 @@ export class AdminPanel {
         errorEl.classList.remove('hidden');
       }
     });
+  }
+
+  // ── Recibos ───────────────────────────────────────────────────────────────
+  _initRecibosForm() {
+    // Populate member select if not already done
+    const sel = document.getElementById('rec-socio-select');
+    if (sel.options.length === 0 && this._members.length > 0) {
+      this._members.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = `${m.apellidos}, ${m.nombre}`;
+        sel.appendChild(opt);
+      });
+    }
+    if (sel.options.length === 0) {
+      // Members not loaded yet, load them
+      supabase.from('socios').select('*').order('apellidos').then(({ data }) => {
+        if (!data) return;
+        this._members = data;
+        data.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = `${m.apellidos}, ${m.nombre}`;
+          sel.appendChild(opt);
+        });
+      });
+    }
+  }
+
+  _onRecModeChange() {
+    const mode = document.querySelector('input[name="rec-mode"]:checked')?.value;
+    document.getElementById('rec-socio-wrap').classList.toggle('hidden', mode !== 'uno');
+    document.getElementById('rec-blank-count-wrap').classList.toggle('hidden', mode !== 'blanco');
+  }
+
+  async _generateRecibos() {
+    const errEl  = document.getElementById('rec-error');
+    const btn    = document.getElementById('rec-generate-btn');
+    errEl.classList.add('hidden');
+
+    const mode         = document.querySelector('input[name="rec-mode"]:checked')?.value;
+    const year         = parseInt(document.getElementById('rec-year').value, 10);
+    const month        = parseInt(document.getElementById('rec-month').value, 10);
+    const importe      = parseFloat(document.getElementById('rec-importe').value) || 15;
+    const importeTexto = document.getElementById('rec-importe-texto').value.trim() || 'quince euros';
+    const cobrador     = document.getElementById('rec-cobrador').value.trim();
+    const startNum     = parseInt(document.getElementById('rec-start-num').value, 10) || 1;
+
+    if (!year || !month) {
+      errEl.textContent = 'Indica el año y el mes.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    let members = [];
+
+    if (mode === 'todos') {
+      // Use active members sorted alphabetically (already in this._members)
+      members = this._members.filter(m => !m.fecha_baja);
+      if (members.length === 0) {
+        errEl.textContent = 'No hay socios activos.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+    } else if (mode === 'uno') {
+      const id = document.getElementById('rec-socio-select').value;
+      const m  = this._members.find(m => m.id === id);
+      if (!m) {
+        errEl.textContent = 'Selecciona un socio.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      members = [m];
+    } else {
+      // Blank
+      const count = parseInt(document.getElementById('rec-blank-count').value, 10) || 1;
+      members = Array.from({ length: count }, () => null);
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Generando…';
+    try {
+      await generateRecibos(members, { year, month, importe, importeTexto, cobrador, startNum });
+      toast(`PDF generado con ${members.length} recibo${members.length !== 1 ? 's' : ''}`);
+    } catch (e) {
+      errEl.textContent = 'Error al generar el PDF: ' + e.message;
+      errEl.classList.remove('hidden');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Generar PDF';
   }
 
   // ── Member card (shown from map search) ───────────────────────────────────

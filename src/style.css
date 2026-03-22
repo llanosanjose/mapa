@@ -2083,3 +2083,75 @@ html:not([data-theme="light"]) .admin-btn-primary { color: var(--bg-deep); }
   .mp-addr  { font-size: 13px; }
   .mp-badge { font-size: 11px; padding: 4px 10px; }
 }
+
+/* ── Recibos section ────────────────────────────────────────────────────── */
+#admin-receipts-section {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.recibos-form {
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rec-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.rec-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-1);
+  cursor: pointer;
+}
+
+.rec-radio-label input[type="radio"] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.rec-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.rec-select {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-1);
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.rec-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.rec-hint {
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.rec-generate-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  margin-top: 4px;
+}

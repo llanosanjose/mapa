@@ -158,6 +158,7 @@
     <div id="admin-tabs" class="admin-tabs hidden">
       <button class="admin-tab active" data-tab="socios">Socios</button>
       <button class="admin-tab" data-tab="usuarios">Usuarios</button>
+      <button class="admin-tab" data-tab="recibos">Recibos</button>
     </div>
     <div class="admin-toolbar">
       <input type="search" id="admin-search-input" placeholder="Filtrar socios…" autocomplete="off" />
@@ -176,6 +177,75 @@
     </div>
     <div id="admin-form-wrap" class="hidden"></div>
     <div id="admin-users-section" class="hidden"></div>
+    <div id="admin-receipts-section" class="hidden">
+      <div class="recibos-form">
+        <div class="admin-field">
+          <label>Socios</label>
+          <div class="rec-radio-group">
+            <label class="rec-radio-label">
+              <input type="radio" name="rec-mode" value="todos" checked /> Todos
+            </label>
+            <label class="rec-radio-label">
+              <input type="radio" name="rec-mode" value="uno" /> Uno específico
+            </label>
+            <label class="rec-radio-label">
+              <input type="radio" name="rec-mode" value="blanco" /> En blanco
+            </label>
+          </div>
+        </div>
+        <div id="rec-socio-wrap" class="admin-field hidden">
+          <label>Socio</label>
+          <select id="rec-socio-select" class="rec-select"></select>
+        </div>
+        <div id="rec-blank-count-wrap" class="admin-field hidden">
+          <label>Cantidad de recibos</label>
+          <input id="rec-blank-count" type="number" value="1" min="1" max="50" />
+        </div>
+        <div class="rec-row">
+          <div class="admin-field">
+            <label>Año</label>
+            <input id="rec-year" type="number" min="2020" max="2100" />
+          </div>
+          <div class="admin-field">
+            <label>Mes</label>
+            <select id="rec-month" class="rec-select">
+              <option value="1">Enero</option>
+              <option value="2">Febrero</option>
+              <option value="3">Marzo</option>
+              <option value="4">Abril</option>
+              <option value="5">Mayo</option>
+              <option value="6">Junio</option>
+              <option value="7">Julio</option>
+              <option value="8">Agosto</option>
+              <option value="9">Septiembre</option>
+              <option value="10">Octubre</option>
+              <option value="11">Noviembre</option>
+              <option value="12">Diciembre</option>
+            </select>
+          </div>
+        </div>
+        <div class="rec-row">
+          <div class="admin-field">
+            <label>Importe (€)</label>
+            <input id="rec-importe" type="number" value="15" min="1" />
+          </div>
+          <div class="admin-field">
+            <label>Nº inicial</label>
+            <input id="rec-start-num" type="number" value="1" min="1" />
+          </div>
+        </div>
+        <div class="admin-field">
+          <label>Importe en texto</label>
+          <input id="rec-importe-texto" type="text" value="quince euros" />
+        </div>
+        <div class="admin-field">
+          <label>Nombre del cobrador <span class="rec-hint">(aparece en la copia)</span></label>
+          <input id="rec-cobrador" type="text" placeholder="Ej: ANTONIO" />
+        </div>
+        <div id="rec-error" class="admin-form-error hidden"></div>
+        <button id="rec-generate-btn" class="admin-btn-primary rec-generate-btn">Generar PDF</button>
+      </div>
+    </div>
   </aside>
 
   <!-- LAYERS PANEL -->
