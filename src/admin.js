@@ -142,6 +142,70 @@ export class AdminPanel {
     const ROLES = ['presidente', 'administrativo', 'vocal'];
     this.usersSection.innerHTML = '';
 
+    // ── Botón invitar ────────────────────────────────────────────────────────
+    const toolbar = document.createElement('div');
+    toolbar.className = 'admin-toolbar';
+    const inviteBtn = document.createElement('button');
+    inviteBtn.id = 'admin-invite-btn';
+    inviteBtn.className = 'admin-btn-sm';
+    inviteBtn.textContent = '+ Invitar usuario';
+    toolbar.appendChild(inviteBtn);
+    this.usersSection.appendChild(toolbar);
+
+    // ── Formulario inline (oculto inicialmente) ──────────────────────────────
+    const inviteForm = document.createElement('div');
+    inviteForm.id = 'admin-invite-form';
+    inviteForm.className = 'hidden admin-invite-form';
+    inviteForm.innerHTML = `
+      <input type="email" id="invite-email" placeholder="correo@ejemplo.com" class="admin-input" />
+      <select id="invite-rol" class="admin-rol-select">
+        ${ROLES.map(r => `<option value="${r}">${r}</option>`).join('')}
+      </select>
+      <button id="invite-send-btn" class="admin-btn-sm">Enviar invitación</button>
+      <button id="invite-cancel-btn" class="admin-btn-sm admin-btn-del">Cancelar</button>
+    `;
+    this.usersSection.appendChild(inviteForm);
+
+    inviteBtn.addEventListener('click', () => {
+      inviteForm.classList.toggle('hidden');
+      if (!inviteForm.classList.contains('hidden')) {
+        document.getElementById('invite-email').focus();
+      }
+    });
+
+    document.getElementById('invite-cancel-btn').addEventListener('click', () => {
+      inviteForm.classList.add('hidden');
+      document.getElementById('invite-email').value = '';
+    });
+
+    document.getElementById('invite-send-btn').addEventListener('click', async () => {
+      const email = document.getElementById('invite-email').value.trim();
+      const rol   = document.getElementById('invite-rol').value;
+      if (!email) { toast('Introduce un email', 'err'); return; }
+
+      inviteBtn.disabled = true;
+      document.getElementById('invite-send-btn').disabled = true;
+      document.getElementById('invite-send-btn').textContent = 'Enviando…';
+
+      const { error } = await supabase.functions.invoke('invite-user', {
+        body: { email, rol },
+      });
+
+      inviteBtn.disabled = false;
+      document.getElementById('invite-send-btn').disabled = false;
+      document.getElementById('invite-send-btn').textContent = 'Enviar invitación';
+
+      if (error) {
+        toast('Error: ' + (error.message ?? error), 'err');
+        return;
+      }
+
+      toast(`Invitación enviada a ${email}`);
+      inviteForm.classList.add('hidden');
+      document.getElementById('invite-email').value = '';
+      await this._loadUsers();
+    });
+
     if (!users.length) {
       const empty = document.createElement('div');
       empty.className = 'admin-empty';
