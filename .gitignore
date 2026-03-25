@@ -34,3 +34,7 @@ generar_estilos_ol.py
 FASE_1_A/
 FASE_1_B/
 pdf_images/
+recibos/
+
+# Configuración local de Claude Code
+.claude/settings.local.json
