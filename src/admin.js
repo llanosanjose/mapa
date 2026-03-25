@@ -2,6 +2,7 @@ import { supabase } from './supabase.js';
 import { isLoggedIn, getUser, getRol, esPres, puedeGestionar, puedeVerFichaMapa, logout, cambiarPassword } from './auth.js';
 import { toast } from './toast.js';
 import { generateRecibos, importeALetras } from './receipts.js';
+import { generateListado } from './listado.js';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -63,6 +64,23 @@ export class AdminPanel {
       if (e.target.files[0]) this._importCSV(e.target.files[0]);
       e.target.value = '';
     });
+    document.getElementById('admin-listado-btn').addEventListener('click', () => {
+      document.getElementById('admin-listado-opts').classList.toggle('hidden');
+    });
+    document.getElementById('listado-generate-btn').addEventListener('click', async () => {
+      const btn       = document.getElementById('listado-generate-btn');
+      const numFila   = document.getElementById('listado-numfila').checked;
+      const casilla   = document.getElementById('listado-casilla').checked;
+      const inclBajas = document.getElementById('listado-bajas').checked;
+      if (!this._members.length) { toast('No hay socios cargados', 'err'); return; }
+      const members = inclBajas ? this._members : this._members.filter(m => !m.fecha_baja);
+      if (!members.length) { toast('No hay socios activos', 'err'); return; }
+      btn.disabled = true;
+      btn.textContent = 'Generando…';
+      await generateListado(members, { numFila, casilla });
+      btn.disabled = false;
+      btn.textContent = 'Generar PDF';
+    });
     document.getElementById('admin-search-input').addEventListener('input', e => {
       this._filter = e.target.value.toLowerCase();
       this._renderList();
@@ -116,6 +134,7 @@ export class AdminPanel {
     document.querySelector('.admin-toolbar').classList.add('hidden');
     document.getElementById('admin-csv-toolbar').classList.add('hidden');
     document.getElementById('admin-map-toolbar').classList.add('hidden');
+    document.getElementById('admin-listado-opts').classList.add('hidden');
 
     if (tab === 'socios') {
       document.querySelector('.admin-toolbar').classList.remove('hidden');

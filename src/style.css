@@ -1282,12 +1282,33 @@ html:not([data-theme="light"]) .admin-btn-primary { color: var(--bg-deep); }
   color: var(--accent) !important;
 }
 
+/* Separador en toolbar CSV */
+.admin-csv-sep {
+  flex: 1;
+}
+
+/* Panel de opciones del listado PDF */
+.admin-listado-opts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--bg-deep);
+  border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.admin-btn-listado-gen {
+  margin-left: auto;
+  font-size: 12px;
+  padding: 6px 14px;
+}
+
 /* Checkbox "incluir bajas" junto al botón del mapa */
 .admin-map-opt {
   display: flex;
   align-items: center;
   gap: 5px;
-  margin-left: 4px;
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-3);

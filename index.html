@@ -171,6 +171,14 @@
       <button id="admin-export-btn" class="admin-btn-sm" title="Exportar socios a CSV">↓ CSV</button>
       <button id="admin-import-btn" class="admin-btn-sm" title="Importar socios desde CSV">↑ CSV</button>
       <input type="file" id="admin-import-input" accept=".csv" class="hidden" />
+      <div class="admin-csv-sep"></div>
+      <button id="admin-listado-btn" class="admin-btn-sm" title="Generar listado PDF de socios">📋 Listado</button>
+    </div>
+    <div id="admin-listado-opts" class="admin-listado-opts hidden">
+      <label class="admin-map-opt"><input type="checkbox" id="listado-numfila" checked /><span>Nº de fila</span></label>
+      <label class="admin-map-opt"><input type="checkbox" id="listado-casilla" checked /><span>Casilla de marcar</span></label>
+      <label class="admin-map-opt"><input type="checkbox" id="listado-bajas" /><span>Incluir bajas</span></label>
+      <button id="listado-generate-btn" class="admin-btn-primary admin-btn-listado-gen">Generar PDF</button>
     </div>
     <div id="admin-map-toolbar" class="admin-csv-toolbar hidden">
       <button id="admin-map-toggle-btn" class="admin-btn-sm" title="Mostrar/ocultar socios en el mapa">📍 Socios en mapa</button>
