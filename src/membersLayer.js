@@ -5,42 +5,70 @@ import { Point } from 'ol/geom';
 import { Style, Fill, Stroke, Circle as CircleStyle, Text } from 'ol/style';
 import { supabase } from './supabase.js';
 
-function memberStyle(feature) {
-  const cuota    = feature.get('cuota_pagada');
-  const inactive = feature.get('inactive');
-  const label    = feature.get('label');
-
-  const fill = inactive ? '#6b7280' : cuota ? '#22c55e' : '#ef4444';
-
-  return new Style({
-    image: new CircleStyle({
-      radius: 8,
-      fill:   new Fill({ color: fill }),
-      stroke: new Stroke({ color: '#0d1017', width: 1.5 }),
-    }),
-    text: new Text({
-      text:     label,
-      font:     '700 12px Nunito, sans-serif',
-      fill:     new Fill({ color: '#ffffff' }),
-      stroke:   new Stroke({ color: '#0d1017', width: 3 }),
-      offsetY:  18,
-      overflow: true,
-    }),
-  });
-}
-
 export class MembersLayer {
   constructor() {
-    this._source = new VectorSource();
-    this.layer   = new VectorLayer({
+    this._source       = new VectorSource();
+    this._filterText   = '';
+    this._showInactive = false;
+    this.layer         = new VectorLayer({
       source:  this._source,
-      style:   memberStyle,
+      style:   (feature) => this._styleFeature(feature),
       zIndex:  200,
       visible: false,
     });
   }
 
-  /** Toggle visibility. Returns new visible state. */
+  _styleFeature(feature) {
+    const cuota    = feature.get('cuota_pagada');
+    const inactive = feature.get('inactive');
+    const label    = feature.get('label');
+    const members  = feature.get('members');
+
+    // Ocultar socios dados de baja si no están activados
+    if (!this._showInactive && feature.get('inactive')) return null;
+
+    // Cuando hay filtro activo, ocultar marcadores que no coinciden
+    if (this._filterText) {
+      const q = this._filterText;
+      const matches = members?.some(m =>
+        (m.nombre + ' ' + m.apellidos + ' ' + (m.dir_display ?? ''))
+          .toLowerCase().includes(q)
+      );
+      if (!matches) return null;
+    }
+
+    const fill = inactive ? '#6b7280' : cuota ? '#22c55e' : '#ef4444';
+
+    return new Style({
+      image: new CircleStyle({
+        radius: 8,
+        fill:   new Fill({ color: fill }),
+        stroke: new Stroke({ color: '#0d1017', width: 1.5 }),
+      }),
+      text: new Text({
+        text:     label,
+        font:     '700 12px Nunito, sans-serif',
+        fill:     new Fill({ color: '#ffffff' }),
+        stroke:   new Stroke({ color: '#0d1017', width: 3 }),
+        offsetY:  18,
+        overflow: true,
+      }),
+    });
+  }
+
+  /** Aplica un filtro de texto a los marcadores visibles en el mapa */
+  applyFilter(filterText) {
+    this._filterText = filterText;
+    this._source.changed();
+  }
+
+  /** Controla si los socios dados de baja se muestran en el mapa */
+  setShowInactive(show) {
+    this._showInactive = show;
+    this._source.changed();
+  }
+
+  /** Toggle visibilidad. Devuelve el nuevo estado visible. */
   async toggle(searchIndex) {
     const visible = !this.layer.getVisible();
     if (visible) {
@@ -85,15 +113,11 @@ export class MembersLayer {
       const coord = ndpuFeat.getGeometry().getCoordinates();
       const f = new Feature({ geometry: new Point(coord) });
 
-      // Etiqueta: nombre apellidos (una línea por socio si comparten dirección)
       f.set('label', members.map(m => m.nombre + ' ' + m.apellidos).join('\n'));
 
-      // Para el color usamos el primer socio (o el más "crítico": moroso > activo)
       const alguno = members.find(m => !m.fecha_baja) ?? members[0];
       f.set('cuota_pagada', alguno.cuota_pagada);
       f.set('inactive', members.every(m => !!m.fecha_baja));
-
-      // Datos completos para el popup al clicar
       f.set('members', members);
 
       features.push(f);

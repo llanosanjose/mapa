@@ -11,10 +11,13 @@ export class AdminPanel {
     this._adminBtn = adminBtn;
     this._members = [];
     this._filter  = '';
+    this.onFilterChange = null;   // callback(filterText) → vincula con la capa del mapa
+    this.onMemberClick  = null;   // callback(kcalle, numPoli) → centra el mapa en la dirección
 
     // DOM refs assigned in _assignRefs()
     this.panel           = null;
     this.adminList       = null;
+    this.listHeader      = null;
     this.formWrap        = null;
     this.memberCard      = null;
     this.usersSection    = null;
@@ -33,6 +36,11 @@ export class AdminPanel {
     this.memberCard      = document.getElementById('member-card');
     this.usersSection    = document.getElementById('admin-users-section');
     this.receiptsSection = document.getElementById('admin-receipts-section');
+
+    // Cabecera de conteo — se inserta dinámicamente antes de la lista
+    this.listHeader = document.createElement('div');
+    this.listHeader.className = 'admin-list-header';
+    this.adminList.parentElement.insertBefore(this.listHeader, this.adminList);
   }
 
   // ── Events ────────────────────────────────────────────────────────────────
@@ -58,6 +66,7 @@ export class AdminPanel {
     document.getElementById('admin-search-input').addEventListener('input', e => {
       this._filter = e.target.value.toLowerCase();
       this._renderList();
+      this.onFilterChange?.(this._filter);
     });
     document.getElementById('admin-pwd-btn').addEventListener('click', () => this._togglePwdForm());
 
@@ -302,6 +311,24 @@ export class AdminPanel {
           (m.nombre + ' ' + m.apellidos + ' ' + m.dir_display).toLowerCase().includes(q))
       : this._members;
 
+    // ── Barra de conteo ──────────────────────────────────────────────────────
+    const activos = this._members.filter(m => !m.fecha_baja).length;
+    const bajas   = this._members.length - activos;
+    if (q) {
+      const filtActivos = filtered.filter(m => !m.fecha_baja).length;
+      const filtBajas   = filtered.length - filtActivos;
+      this.listHeader.innerHTML =
+        `<span class="admin-count-num">${filtActivos}</span>` +
+        `<span class="admin-count-label">activos</span>` +
+        (filtBajas ? `<span class="admin-count-sep">·</span><span class="admin-count-num admin-count-baja">${filtBajas}</span><span class="admin-count-label">bajas</span>` : '') +
+        `<span class="admin-count-sep">de ${this._members.length}</span>`;
+    } else {
+      this.listHeader.innerHTML =
+        `<span class="admin-count-num">${activos}</span>` +
+        `<span class="admin-count-label">activos</span>` +
+        (bajas ? `<span class="admin-count-sep">·</span><span class="admin-count-num admin-count-baja">${bajas}</span><span class="admin-count-label">bajas</span>` : '');
+    }
+
     this.adminList.innerHTML = '';
 
     if (filtered.length === 0) {
@@ -312,13 +339,33 @@ export class AdminPanel {
       return;
     }
 
+    const gestionar = puedeGestionar();
+
     filtered.forEach(m => {
       const row = document.createElement('div');
       row.className = 'admin-member-row';
 
-      const cuota = document.createElement('span');
-      cuota.className = 'admin-cuota-dot ' + (m.cuota_pagada ? 'cuota-ok' : 'cuota-ko');
-      cuota.title = m.cuota_pagada ? `Cuota ${m.anno_cuota} pagada` : `Cuota ${m.anno_cuota} pendiente`;
+      const inactive = !!m.fecha_baja;
+      if (inactive) row.classList.add('admin-row-inactive');
+
+      // ── Badge de cuota ───────────────────────────────────────────────────
+      const badge = document.createElement('span');
+      if (inactive) {
+        badge.className = 'admin-cuota-badge cuota-baja';
+        badge.textContent = 'Baja';
+      } else if (m.cuota_pagada) {
+        badge.className = 'admin-cuota-badge cuota-ok';
+        badge.textContent = `✓ ${m.anno_cuota ?? ''}`;
+        badge.title = `Cuota ${m.anno_cuota} pagada`;
+      } else {
+        badge.className = 'admin-cuota-badge cuota-ko';
+        badge.textContent = `⚠ ${m.anno_cuota ?? ''}`;
+        badge.title = `Cuota ${m.anno_cuota} pendiente`;
+      }
+
+      // ── Info (nombre + dirección en dos líneas) ──────────────────────────
+      const info = document.createElement('div');
+      info.className = 'admin-member-info';
 
       const name = document.createElement('span');
       name.className = 'admin-member-name';
@@ -326,38 +373,47 @@ export class AdminPanel {
 
       const addr = document.createElement('span');
       addr.className = 'admin-member-addr';
-      addr.textContent = m.dir_display;
+      addr.textContent = m.dir_display ?? '—';
 
+      info.appendChild(name);
+      info.appendChild(addr);
+
+      // ── Botones (solo icono) ─────────────────────────────────────────────
       const btns = document.createElement('div');
       btns.className = 'admin-row-btns';
 
-      const inactive = !!m.fecha_baja;
-      if (inactive) row.classList.add('admin-row-inactive');
-
-      const gestionar = puedeGestionar();
-
       const editBtn = document.createElement('button');
-      editBtn.className = 'admin-btn-sm';
-      editBtn.textContent = gestionar ? 'Editar' : 'Ver';
+      editBtn.className = 'admin-btn-icon';
+      editBtn.title = gestionar ? 'Editar' : 'Ver ficha';
+      editBtn.innerHTML = gestionar
+        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`
+        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
       editBtn.addEventListener('click', e => { e.stopPropagation(); this._showForm(m); });
       btns.appendChild(editBtn);
 
       if (gestionar) {
         const toggleBtn = document.createElement('button');
         if (inactive) {
-          toggleBtn.className = 'admin-btn-sm admin-btn-ok';
-          toggleBtn.textContent = 'Reactivar';
+          toggleBtn.className = 'admin-btn-icon admin-btn-ok';
+          toggleBtn.title = 'Reactivar socio';
+          toggleBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
           toggleBtn.addEventListener('click', e => { e.stopPropagation(); this._reactivar(m); });
         } else {
-          toggleBtn.className = 'admin-btn-sm admin-btn-del';
-          toggleBtn.textContent = 'Dar de baja';
+          toggleBtn.className = 'admin-btn-icon admin-btn-del';
+          toggleBtn.title = 'Dar de baja';
+          toggleBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="14"/><line x1="23" y1="8" x2="17" y2="14"/></svg>`;
           toggleBtn.addEventListener('click', e => { e.stopPropagation(); this._darDeBaja(m); });
         }
         btns.appendChild(toggleBtn);
       }
-      row.appendChild(cuota);
-      row.appendChild(name);
-      row.appendChild(addr);
+
+      if (m.kcalle && m.num_poli && this.onMemberClick) {
+        row.classList.add('admin-row-clickable');
+        row.addEventListener('click', () => this.onMemberClick(m.kcalle, m.num_poli));
+      }
+
+      row.appendChild(badge);
+      row.appendChild(info);
       row.appendChild(btns);
       this.adminList.appendChild(row);
     });

@@ -202,9 +202,43 @@ mapToggleBtn.addEventListener('click', async () => {
   }
   mapToggleBtn.disabled = true;
   const visible = await membersLayer.toggle(search.getIndex());
+  // Al mostrar, aplicar el filtro actual del panel
+  if (visible) membersLayer.applyFilter(adminPanel._filter);
   mapToggleBtn.disabled = false;
+  mapToggleBtn.classList.toggle('map-btn-active', visible);
   mapToggleBtn.textContent = visible ? '🗺 Ocultar socios' : '📍 Socios en mapa';
 });
+
+// Vincular filtro del panel con los marcadores del mapa
+adminPanel.onFilterChange = (filterText) => {
+  if (membersLayer.layer.getVisible()) membersLayer.applyFilter(filterText);
+};
+
+// Checkbox "incluir bajas" en la capa del mapa
+document.getElementById('admin-map-show-inactive').addEventListener('change', e => {
+  membersLayer.setShowInactive(e.target.checked);
+});
+
+// Clic en fila → centrar mapa en la dirección del socio
+adminPanel.onMemberClick = (kcalle, numPoli) => {
+  if (!search._ready) return;
+  const entry = search.getIndex().get(kcalle);
+  if (!entry) return;
+
+  // Resolver número de policía (misma lógica que membersLayer)
+  const raw         = String(numPoli).trim();
+  const padded      = raw.padStart(4, '0');
+  const alphaMatch  = raw.match(/^(\d+)([a-zA-Z].*)$/);
+  const paddedAlpha = alphaMatch ? alphaMatch[1].padStart(4, '0') + alphaMatch[2].toUpperCase() : null;
+  const candidates  = [raw, padded, paddedAlpha, raw.toUpperCase()].filter(Boolean);
+  const key = candidates.find(k => entry.ndpu.has(k))
+    ?? [...entry.ndpu.keys()].find(k => k.toLowerCase() === raw.toLowerCase())
+    ?? null;
+  if (!key) return;
+
+  const coord = entry.ndpu.get(key).getGeometry().getCoordinates();
+  map.getView().animate({ center: coord, zoom: 19, duration: 600 });
+};
 
 // Callback del buscador → buscar socio en esa dirección
 search._onAddressResolved = (kcalle, numPoli) => {
@@ -240,6 +274,7 @@ onAuthChange(session => {
     adminPanel.close();
     membersLayer.hide();
     mapToggleBtn.textContent = '📍 Socios en mapa';
+    mapToggleBtn.classList.remove('map-btn-active');
     document.getElementById('map-popup')?.classList.remove('mp-show');
   }
 });

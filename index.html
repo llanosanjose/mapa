@@ -161,7 +161,10 @@
       <button class="admin-tab" data-tab="recibos">Recibos</button>
     </div>
     <div class="admin-toolbar">
-      <input type="search" id="admin-search-input" placeholder="Filtrar socios…" autocomplete="off" />
+      <div class="admin-search-wrap">
+        <svg class="admin-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="search" id="admin-search-input" placeholder="Filtrar socios…" autocomplete="off" />
+      </div>
       <button id="admin-add-btn" class="admin-btn-primary">+ Nuevo</button>
     </div>
     <div id="admin-csv-toolbar" class="admin-csv-toolbar hidden">
@@ -171,6 +174,10 @@
     </div>
     <div id="admin-map-toolbar" class="admin-csv-toolbar hidden">
       <button id="admin-map-toggle-btn" class="admin-btn-sm" title="Mostrar/ocultar socios en el mapa">📍 Socios en mapa</button>
+      <label class="admin-map-opt" title="Mostrar también los socios dados de baja">
+        <input type="checkbox" id="admin-map-show-inactive" />
+        <span>incluir bajas</span>
+      </label>
     </div>
     <div class="admin-list-section">
       <div id="admin-list"></div>

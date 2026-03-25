@@ -321,7 +321,7 @@ export const LAYER_DEFS = [
       }),
       opacity: 0.7,
       zIndex: 10,
-      visible: true,
+      visible: false,
     }),
   },
   {

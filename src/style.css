@@ -797,9 +797,9 @@ html[data-theme="light"] .ol-scale-line {
 }
 
 /* ── Scrollbar ──────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: var(--bg-deep); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent-d); }
 
 /* ── Lock icon states ───────────────────────────────────────────────────── */
@@ -1066,20 +1066,36 @@ html[data-theme="light"] #admin-panel { box-shadow: -6px 0 20px rgba(0,0,0,0.15)
 }
 .admin-csv-toolbar {
   display: flex;
+  align-items: center;
   gap: 6px;
   padding: 6px 12px;
   border-bottom: 1px solid var(--border-dim);
   flex-shrink: 0;
 }
-#admin-search-input {
+.admin-search-wrap {
   flex: 1;
+  position: relative;
+  min-width: 0;
+}
+.admin-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+#admin-search-input {
+  width: 100%;
+  box-sizing: border-box;
   background: var(--bg-deep);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
   color: var(--text-1);
   font-family: var(--font-body);
   font-size: 14px;
-  padding: 8px 12px;
+  padding: 8px 12px 8px 32px;
   outline: none;
   transition: border-color var(--transition), box-shadow var(--transition);
 }
@@ -1103,27 +1119,88 @@ html[data-theme="light"] #admin-panel { box-shadow: -6px 0 20px rgba(0,0,0,0.15)
   letter-spacing: 0.06em;
 }
 
+/* ── Barra de conteo ─────────────────────────────────────────────────────── */
+.admin-list-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  background: var(--bg-deep);
+  border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0;
+}
+.admin-count-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.admin-count-num.admin-count-baja {
+  color: var(--text-3);
+}
+.admin-count-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}
+.admin-count-sep {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--border-hi);
+}
+
+/* ── Fila de socio ───────────────────────────────────────────────────────── */
 .admin-member-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
+  gap: 10px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border-dim);
   transition: background var(--transition);
 }
 .admin-member-row:hover { background: var(--bg-hover); }
+.admin-row-clickable { cursor: pointer; }
 
-.admin-cuota-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
+/* ── Badge de cuota (pill) ───────────────────────────────────────────────── */
+.admin-cuota-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
   flex-shrink: 0;
 }
-.cuota-ok { background: var(--green); box-shadow: 0 0 5px var(--green); }
-.cuota-ko { background: var(--red);   box-shadow: 0 0 5px var(--red);   }
+.admin-cuota-badge.cuota-ok {
+  background: rgba(34,197,94,.13);
+  color: var(--green);
+  border: 1px solid rgba(34,197,94,.28);
+}
+.admin-cuota-badge.cuota-ko {
+  background: rgba(239,68,68,.13);
+  color: var(--red);
+  border: 1px solid rgba(239,68,68,.28);
+}
+.admin-cuota-badge.cuota-baja {
+  background: rgba(107,114,128,.10);
+  color: var(--text-3);
+  border: 1px solid rgba(107,114,128,.22);
+}
 
-.admin-member-name {
+/* ── Info de socio (dos líneas: nombre + dirección) ──────────────────────── */
+.admin-member-info {
   flex: 1;
-  font-size: 14px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.admin-member-name {
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-1);
   overflow: hidden;
@@ -1137,11 +1214,28 @@ html[data-theme="light"] #admin-panel { box-shadow: -6px 0 20px rgba(0,0,0,0.15)
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;
-  flex-shrink: 1;
 }
 
 .admin-row-btns { display: flex; gap: 4px; flex-shrink: 0; }
+
+.admin-btn-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-2);
+  flex-shrink: 0;
+  transition: all var(--transition);
+  cursor: pointer;
+}
+.admin-btn-icon:hover { border-color: var(--border-hi); color: var(--text-1); background: var(--bg-card); }
+.admin-btn-icon.admin-btn-del:hover { border-color: var(--red);   color: var(--red);   background: rgba(239,68,68,.06); }
+.admin-btn-icon.admin-btn-ok:hover  { border-color: var(--green); color: var(--green); background: rgba(34,197,94,.06); }
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
 .admin-btn-primary {
@@ -1174,14 +1268,42 @@ html:not([data-theme="light"]) .admin-btn-primary { color: var(--bg-deep); }
   padding: 5px 11px;
   white-space: nowrap;
   transition: all var(--transition);
+  cursor: pointer;
 }
-.admin-btn-sm:hover { border-color: var(--border-hi); color: var(--text-1); }
+.admin-btn-sm:hover { border-color: var(--border-hi); color: var(--text-1); background: var(--bg-card); }
+.admin-btn-sm:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.admin-btn-del:hover { border-color: var(--red);   color: var(--red);   }
-.admin-btn-ok:hover  { border-color: var(--green); color: var(--green); }
+.admin-btn-del:hover { border-color: var(--red);   color: var(--red);   background: rgba(239,68,68,.06); }
+.admin-btn-ok:hover  { border-color: var(--green); color: var(--green); background: rgba(34,197,94,.06); }
+
+/* Botón mapa activo */
+.map-btn-active {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+/* Checkbox "incluir bajas" junto al botón del mapa */
+.admin-map-opt {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.admin-map-opt input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+  width: 13px;
+  height: 13px;
+}
 
 .admin-row-inactive { opacity: 0.45; }
-.admin-row-inactive:hover { opacity: 0.75; }
+.admin-row-inactive:hover { opacity: 0.8; }
 
 /* ── Admin form ──────────────────────────────────────────────────────────── */
 #admin-form-wrap {
@@ -1882,9 +2004,11 @@ html:not([data-theme="light"]) .admin-btn-primary { color: var(--bg-deep); }
   /* ── Lista admin ── */
   .admin-member-row {
     padding: 12px 12px;
-    min-height: 52px;
+    min-height: 54px;
   }
-  .admin-member-name { font-size: 15px; }
+  .admin-member-name { font-size: 14px; }
+  .admin-member-addr { font-size: 11px; }
+  .admin-cuota-badge { font-size: 11px; padding: 3px 9px; }
   #admin-search-input {
     padding: 10px;
     font-size: 16px;
